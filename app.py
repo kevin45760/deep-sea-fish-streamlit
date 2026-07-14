@@ -7,23 +7,38 @@ st.set_page_config(page_title="深海奇蹟", page_icon="🌊", layout="wide")
 # 明亮版 CSS
 st.markdown("""
 <style>
-    .main { background-color: #0f2a4a; color: #e0f0ff; }
-    h1, h2, h3 { color: #00f5ff !important; text-shadow: 0 0 10px #00f5ff; }
-    .stApp { background-color: #0a1f3d; }
+    .main { 
+        background-color: #0f2a4a; 
+        color: #e8f1ff; 
+    }
+    h1, h2, h3 { 
+        color: #7df9ff !important; 
+    }
+    p, li, label, .stMarkdown { 
+        color: #c5d8ff !important; 
+    }
+    
+    /* 魚類卡片 */
     .fish-card {
-        background: linear-gradient(145deg, #1e3a5f, #2a4a75);
+        background: linear-gradient(145deg, #1e3a5f, #264a75);
         border-radius: 20px;
-        padding: 20px;
-        border: 2px solid #00f5ff44;
-        transition: all 0.3s;
+        padding: 25px;
+        border: 1px solid #4fc3f7;
+        margin-bottom: 25px;
     }
     .fish-card:hover {
         transform: translateY(-8px);
-        box-shadow: 0 15px 30px rgba(0, 245, 255, 0.3);
+        box-shadow: 0 15px 30px rgba(0, 183, 235, 0.25);
     }
-    p, li, .stMarkdown { color: #c0d8ff !important; }
+    
+    /* 輸入框 */
     .stTextInput input, .stTextArea textarea {
         background-color: #1e3a5f !important;
+        color: #e8f1ff !important;
+    }
+    
+    button {
+        background-color: #00acc1 !important;
         color: white !important;
     }
 </style>
