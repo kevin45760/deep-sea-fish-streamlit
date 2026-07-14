@@ -10,7 +10,7 @@ import uuid
 import time  # 🟢 引入時間模組，用來控制提示框顯示的停留時間
 
 # 1. 網頁基本設定
-st.set_page_config(page_title="深海奇蹟", page_icon="🌊", layout="wide")
+st.set_page_config(page_title="深海未知的奧妙", page_icon="🌊", layout="wide")
 
 # 🟢 2. 初始化瀏覽器身分代碼 (結合 st.query_params 讓 F5 刷新不失憶)
 if "uid" in st.query_params:
