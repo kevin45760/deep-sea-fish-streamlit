@@ -833,5 +833,6 @@ st.markdown("""
         <p style="color: #6a7b95; font-size: 13px; letter-spacing: 1px;">
             © 2026 Designed & Built by <span style="color: #00e5ff; font-weight: bold;">Kevin Chen</span>. All Rights Reserved.
         </p>
+        <p>🌊 深海奇蹟 | 守護海洋 從認識開始</p>
     </div>
 """, unsafe_allow_html=True)
