@@ -414,6 +414,7 @@ if "success_fish_id" in st.session_state:
 
 if page == "🏠 首頁":
     st.title("🌊 深海未知的奧妙")
+    st.markdown("<p style='color: #64ffda; font-size: 14px; margin-top: -15px;'>By Kevin Chen</p>", unsafe_allow_html=True)
     st.subheader("探索黑暗深淵的神秘生物")
     
     # 🌍 10大全球深海區域 - 頂級磨砂玻璃點擊式輪播組件
