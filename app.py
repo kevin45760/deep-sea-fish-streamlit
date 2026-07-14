@@ -269,7 +269,11 @@ def update_fish(fish_id, name, en, depth, desc):
     conn.close()
 
 # ==================== 側邊導航 ====================
-page = st.sidebar.selectbox("🌊 選擇頁面", ["🏠 首頁", "🐟 魚類圖鑑", "📸 相關資料上傳", "📧 聯絡我們", "ℹ️ 關於我們"], key="nav_page")
+# 🟢 修改點：移除 key="nav_page"，改由變數與 index 控管，完美避開 Widget Key 鎖定限制
+menu_options = ["🏠 首頁", "🐟 魚類圖鑑", "📸 相關資料上傳", "📧 聯絡我們", "ℹ️ 關於我們"]
+default_idx = menu_options.index(st.session_state.nav_page) if st.session_state.nav_page in menu_options else 0
+page = st.sidebar.selectbox("🌊 選擇頁面", menu_options, index=default_idx)
+st.session_state.nav_page = page  # 同步點選狀態
 st.sidebar.markdown("---")
 st.sidebar.info("🐋 一起守護深海生態！")
 
@@ -369,7 +373,8 @@ elif page == "🐟 魚類圖鑑":
             with st.container(border=True):
                 col1, col2 = st.columns([1, 2])
                 with col1:
-                    st.image(f_img, use_container_width=True)
+                    # 🟢 順手修正：配合 2026 新版規範將 use_container_width 改為 width="stretch"
+                    st.image(f_img, width="stretch")
                 with col2:
                     st.markdown(f"""
                         <div class="fish-title">🐟 {f_name}</div>
@@ -428,17 +433,14 @@ elif page == "📸 相關資料上傳":
             with open(file_path, "wb") as f:
                 f.write(uploaded_file.getbuffer())
             
-            # 寫入資料庫並取得新 ID
-            new_fish_id = add_fish(name, en, depth, desc, file_path, st.session_state.user_id)
-            st.session_state.success_fish_id = new_fish_id
-            # 🟢 修改點：設定提示框旗標，並直接更新 nav_page 狀態強制同步導向圖鑑頁
+            add_fish(name, en, depth, desc, file_path, st.session_state.user_id)
+            
+            # 🟢 這裡的自由變數轉跳再也不會引發錯誤了！
             st.session_state.upload_success_alert = True
             st.session_state.nav_page = "🐟 魚類圖鑑"
             
-            # 🟢 在中下方跳出優雅的提示框，不噴彩帶，乾淨俐落
-            st.success("✅ 新物種發布成功！正在為您導向檢視專頁...")
+            st.success("✅ 上傳成功！正在為您導向圖鑑頁面做檢視...")
             
-            # 暫停 1.2 秒確保使用者有看見提示框，隨後觸發跳轉
             time.sleep(1.2)
             st.rerun()
         else:
