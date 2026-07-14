@@ -822,9 +822,84 @@ elif page == "📧 聯絡我們":
                 st.warning("⚠️ 請完整填寫姓名、電子郵件與訊息內容。")
 
 elif page == "ℹ️ 關於我們":
-    st.title("ℹ️ 關於深海未知的奧妙")
-    st.write("本計畫旨在透過現代 Web 技術，向大眾普及極限環境下的深海生態知識。")
-    st.info("🛠️ **技術堆疊**：Python 3.10+ / Streamlit / SQLite3")
+    st.title("⚓ 關於本站與開發者")
+    
+    # -------------------------------------------------------------------------
+    # 1. 網頁開發想法
+    # -------------------------------------------------------------------------
+    st.markdown("## 🌊 為什麼建立「深海奇蹟」？")
+    
+    st.markdown("""
+    > **「人類對火星表面的了解，甚至超過了對地球深海的認識。」**
+    
+    深海是一片佔據地球龐大體積、卻極少被人類窺探的神秘領域。建立這個網頁的初衷，是希望能透過**現代化的網頁視覺技術**與**動態互動介面**，將那些隱身於千米之下、打破生物學常理的深海奇觀，以最直覺且具備科技感的方式呈現給大眾。
+    
+    我們試圖打造一個不僅僅是數據堆疊的圖鑑，而是一個兼具探險儀式感與視覺饗宴的「數位深海觀測站」，點燃每個人對未知深淵的強烈好奇心。
+    """)
+    
+    st.markdown("---")
+    
+    # -------------------------------------------------------------------------
+    # 2. 開發者基本介紹 (磨砂玻璃卡片風格)
+    # -------------------------------------------------------------------------
+    st.markdown("## 💻 遇見開發者")
+    
+    developer_html = """
+    <div style="
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+        border-radius: 15px;
+        padding: 25px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    ">
+        <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
+            <div style="
+                width: 60px; 
+                height: 60px; 
+                background: linear-gradient(45deg, #00e5ff, #64ffda); 
+                border-radius: 50%; 
+                display: flex; 
+                align-items: center; 
+                justify-content: center;
+                font-size: 24px;
+                color: #0a192f;
+                font-weight: bold;
+                box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
+            ">
+                KC
+            </div>
+            <div>
+                <h3 style="margin: 0; color: #ffffff; font-size: 22px; font-family: sans-serif;">Kevin Chen</h3>
+                <p style="margin: 5px 0 0 0; color: #00e5ff; font-size: 14px; font-weight: 500; letter-spacing: 0.5px;">
+                    Full-Stack Enthusiast & Cloud Explorer
+                </p>
+            </div>
+        </div>
+        
+        <p style="color: #d1dbe5; line-height: 1.6; font-size: 14.5px; margin-bottom: 15px;">
+            嗨！我是 Kevin，目前就讀於<b>資訊工程系</b>。我熱衷於全端網頁開發、自動化系統部署以及現代 UI/UX 視覺設計。喜歡將複雜的後端邏輯與數據，轉化為優雅、流暢且具備科技感的網頁互動體驗。
+        </p>
+        
+        <div style="margin-top: 20px;">
+            <h4 style="color: #64ffda; margin-bottom: 10px; font-size: 15px;">🛠️ 技術雷達與專長</h4>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                <span style="background: rgba(0, 229, 255, 0.1); color: #00e5ff; padding: 4px 10px; border-radius: 20px; font-size: 12px; border: 1px solid rgba(0, 229, 255, 0.2);">Python Flask / Streamlit</span>
+                <span style="background: rgba(0, 229, 255, 0.1); color: #00e5ff; padding: 4px 10px; border-radius: 20px; font-size: 12px; border: 1px solid rgba(0, 229, 255, 0.2);">Linux Admin & Nginx</span>
+                <span style="background: rgba(0, 229, 255, 0.1); color: #00e5ff; padding: 4px 10px; border-radius: 20px; font-size: 12px; border: 1px solid rgba(0, 229, 255, 0.2);">Modern UI Design</span>
+            </div>
+        </div>
+
+        <div style="margin-top: 25px; padding-top: 15px; border-top: 1px solid rgba(255, 255, 255, 0.05); display: flex; flex-direction: column; gap: 8px; color: #a8b2d1; font-size: 13px;">
+            <div>🌟 <b>專業認證：</b> 已考取 Microsoft Azure 多項雲端核心認證 (AZ-900, DP-900, AI-900)。</div>
+            <div>💡 <b>其他實踐：</b> 課餘時間擔任數位學伴，嘗試用科技與熱忱帶領小朋友探索世界。</div>
+            <div>🎵 <b>程式燃料：</b> 寫 Code 時不可或缺的是 JADE、Deca Joins 與 Sunset Rollercoaster 的獨立音樂。</div>
+        </div>
+    </div>
+    """
+    
+    st.components.v1.html(developer_html, height=360)
 
 # ==================== 頁尾 ====================
 st.markdown("<br><br><br>", unsafe_allow_html=True) # 留出推擠空間
