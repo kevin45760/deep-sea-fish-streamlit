@@ -7,6 +7,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import re
 import uuid
+import time  # 🟢 引入時間模組，用來控制提示框顯示的停留時間
 
 # 1. 網頁基本設定
 st.set_page_config(page_title="深海奇蹟", page_icon="🌊", layout="wide")
@@ -14,6 +15,10 @@ st.set_page_config(page_title="深海奇蹟", page_icon="🌊", layout="wide")
 # 🟢 2. 初始化瀏覽器身分代碼 (如果沒有的話就發配一張)
 if "user_id" not in st.session_state:
     st.session_state.user_id = str(uuid.uuid4())
+
+# 初始化側邊欄導航狀態
+if "nav_page" not in st.session_state:
+    st.session_state.nav_page = "🏠 首頁"
 
 # 注入自訂 CSS，打造深海科技感視覺
 st.markdown("""
@@ -228,6 +233,14 @@ def load_fish():
     conn.close()
     return fish
 
+def get_fish_by_id(fish_id):
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute("SELECT * FROM fish WHERE id = ?", (fish_id,))
+    fish = c.fetchone()
+    conn.close()
+    return fish
+
 # 🟢 修改：將 uploader_id 儲存進資料庫
 def add_fish(name, en, depth, desc, img, uploader_id):
     conn = sqlite3.connect(DB_NAME)
@@ -256,7 +269,7 @@ def update_fish(fish_id, name, en, depth, desc):
     conn.close()
 
 # ==================== 側邊導航 ====================
-page = st.sidebar.selectbox("🌊 選擇頁面", ["🏠 首頁", "🐟 魚類圖鑑", "📸 照片上傳", "📧 聯絡我們", "ℹ️ 關於我們"])
+page = st.sidebar.selectbox("🌊 選擇頁面", ["🏠 首頁", "🐟 魚類圖鑑", "📸 照片上傳", "📧 聯絡我們", "ℹ️ 關於我們"], key="nav_page")
 st.sidebar.markdown("---")
 st.sidebar.info("🐋 一起守護深海生態！")
 
@@ -290,6 +303,37 @@ elif min_selected >= 4000:
     st.sidebar.success("💀 **深海帶 (Abyssopelagic)**\n\n接近無底深淵，生存著最奇異、最危險的巨獸。")
 else:
     st.sidebar.write("🛸 **跨區域探索中...**")
+
+# --- 【核心路由攔截】：成功頁面檢視 ---
+if "success_fish_id" in st.session_state:
+    st.title("🎉 新物種登錄成功！")
+    target_fish = get_fish_by_id(st.session_state.success_fish_id)
+    
+    if target_fish:
+        f_id, f_name, f_en, f_depth, f_desc, f_img, f_likes, f_time, f_uploader_id = target_fish
+        st.success(f"✨ 恭喜！您發現的「{f_name}」已成功記錄在航海日誌中。以下為即時通報數據：")
+        
+        with st.container(border=True):
+            col1, col2 = st.columns([1, 2])
+            with col1:
+                st.image(f_img, use_container_width=True)
+            with col2:
+                st.markdown(f"""
+                    <div class="fish-title">🐟 {f_name}</div>
+                    <div class="fish-en">{f_en if f_en else '無學名紀錄'}</div>
+                    <div class="fish-meta">📍 發現深度：{f_depth}</div>
+                    <p class="fish-desc">{f_desc}</p>
+                    <div style="color: #6688aa; font-size: 13px; margin-top: 10px;">🕒 登錄時間：{f_time}</div>
+                """, unsafe_allow_html=True)
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("✨ 進入深海圖鑑觀看全部物種", use_container_width=True):
+            del st.session_state.success_fish_id
+            st.session_state.nav_page = "🐟 魚類圖鑑"
+            st.rerun()
+    else:
+        del st.session_state.success_fish_id
+        st.rerun()
 
 
 if page == "🏠 首頁":
@@ -373,18 +417,26 @@ elif page == "📸 照片上傳":
         uploaded_file = st.file_uploader("選擇照片", type=["jpg", "png", "jpeg"])
         submitted = st.form_submit_button("🚀 發布至圖鑑")
         
-        if submitted:
-            if uploaded_file and name and depth and desc:
-                file_path = os.path.join("uploads", uploaded_file.name)
-                with open(file_path, "wb") as f:
-                    f.write(uploaded_file.getbuffer())
-                # 🟢 修改：將當前會話的 st.session_state.user_id 傳入
-                add_fish(name, en, depth, desc, file_path, st.session_state.user_id)
-                st.success("✅ 成功上傳！新物種已加入深海圖鑑。")
-                st.balloons()
-                st.rerun()
-            else:
-                st.error("❌ 請完整填寫必填欄位並上傳照片！")
+    # 🟢 將上傳成功的邏輯拉到表單外面，這樣提示框會自然渲染在頁面的「中下位置」
+    if submitted:
+        if uploaded_file and name and depth and desc:
+            file_path = os.path.join("uploads", uploaded_file.name)
+            with open(file_path, "wb") as f:
+                f.write(uploaded_file.getbuffer())
+            
+            # 寫入資料庫並取得新 ID
+            new_fish_id = add_fish(name, en, depth, desc, file_path, st.session_state.user_id)
+            st.session_state.success_fish_id = new_fish_id
+            
+            # 🟢 在中下方跳出優雅的提示框，不噴彩帶，乾淨俐落
+            st.success("✅ 新物種發布成功！正在為您導向檢視專頁...")
+            
+            # 暫停 1.2 秒確保使用者有看見提示框，隨後觸發跳轉
+            time.sleep(1.2)
+            st.rerun()
+        else:
+            st.error("❌ 請完整填寫必填欄位並上傳照片！")
+        
 
 elif page == "📧 聯絡我們":
     st.title("📧 聯絡我們")
