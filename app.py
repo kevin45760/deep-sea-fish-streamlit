@@ -171,6 +171,16 @@ DB_NAME = "fish_v3.db"
 def init_db():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
+    
+    # 🟢 核心修改：補上漏掉的按讚紀錄資料表建立指令，徹底根治 OperationalError
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS likes_registry (
+            user_id TEXT,
+            fish_id INTEGER,
+            PRIMARY KEY (user_id, fish_id)
+        )
+    """)
+    
     # 加上這行：每次初始化時若欄位不對，就直接砍掉重建
     c.execute("""CREATE TABLE IF NOT EXISTS fish (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -459,7 +469,7 @@ elif page == "🐟 魚類圖鑑":
                             else:
                                 st.toast("已收回讚。")
                             time.sleep(0.3)
-                            st.rerun()
+                            st.rerun()  
                     with col_b:
                         if st.button("🔗 分享專屬連結", key=f"share_{f_id}"):
                             st.code(f"https://share.streamlit.io/your-username/repo-name/~/fish_id={f_id}", language=None)
