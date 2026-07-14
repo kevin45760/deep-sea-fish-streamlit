@@ -830,9 +830,9 @@ elif page == "ℹ️ 關於我們":
 st.markdown("<br><br><br>", unsafe_allow_html=True) # 留出推擠空間
 st.markdown("""
     <div style="text-align: center; padding: 20px 0; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+        <p>🌊 深海奇蹟 | 守護海洋 從認識開始</p>
         <p style="color: #6a7b95; font-size: 13px; letter-spacing: 1px;">
             © 2026 Designed & Built by <span style="color: #00e5ff; font-weight: bold;">Kevin Chen</span>. All Rights Reserved.
         </p>
-        <p>🌊 深海奇蹟 | 守護海洋 從認識開始</p>
     </div>
 """, unsafe_allow_html=True)
