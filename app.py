@@ -30,8 +30,8 @@ if "nav_page" not in st.session_state:
 # 注入自訂 CSS，打造深海科技感視覺
 st.markdown("""
 <style>
-    /* 🔍 打造 Google 級別的膠囊深海搜尋框 */
-    div[data-testid="stTextInputRootElement"] {
+    /* 🔍 利用 :has() 確保只針對「圖鑑搜尋框」套用膠囊深海風格 */
+    div[data-testid="stTextInputRootElement"]:has(input[placeholder*="探索深海魚種"]) {
         border-radius: 30px !important; /* 讓兩端變成完美的圓弧膠囊狀 */
         background: rgba(255, 255, 255, 0.04) !important; /* 輕微的磨砂玻璃底色 */
         backdrop-filter: blur(10px);
@@ -57,15 +57,14 @@ st.markdown("""
             0 12px 30px rgba(0, 0, 0, 0.5) !important;
     }
 
-    /* 在輸入框左側，純 CSS 內嵌 SVG 放大鏡圖示 */
-    div[data-testid="stTextInputRootElement"] input {
-        padding-left: 38px !important; /* 留出空間給左邊的放大鏡 */
+    /* 僅在搜尋框內部嵌入 SVG 放大鏡圖示，並留出左側空間 */
+    div[data-testid="stTextInputRootElement"] input[placeholder*="探索深海魚種"] {
+        padding-left: 38px !important; 
         color: #ffffff !important;
-        /* 以下用 Data URI 塞入亮青色的 SVG 放大鏡 */
         background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%2300e5ff" class="bi bi-search" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>') !important;
         background-repeat: no-repeat !important;
-        background-position: 10px center !important; /* 控制圖示水平垂直居中 */
-    }        
+        background-position: 10px center !important; 
+    }   
             
     [data-testid="stAppViewContainer"] { 
         background: radial-gradient(circle at 50% 40%, #0d1e36 0%, #050b14 100%) !important; 
