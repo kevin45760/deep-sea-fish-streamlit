@@ -301,7 +301,7 @@ elif page == "🐟 魚類圖鑑":
                             st.rerun()
                     with col_b:
                         if st.button("🔗 分享專屬連結", key=f"share_{f_id}"):
-                            st.code(f"https://share.streamlit.io/your-username/repo-name/~/fish_id={f_id}", language=None)=None)
+                            st.code(f"https://share.streamlit.io/your-username/repo-name/~/fish_id={f_id}", language=None)
                 st.markdown('</div>', unsafe_allow_html=True)   
 
 elif page == "📸 照片上傳":
