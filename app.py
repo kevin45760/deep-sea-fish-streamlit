@@ -7,39 +7,55 @@ st.set_page_config(page_title="深海奇蹟", page_icon="🌊", layout="wide")
 # 明亮版 CSS
 st.markdown("""
 <style>
-    .main { 
-        background-color: #0f2a4a; 
-        color: #e8f1ff; 
-    }
-    h1, h2, h3 { 
-        color: #7df9ff !important; 
-    }
-    p, li, label, .stMarkdown { 
-        color: #c5d8ff !important; 
+    /* 主體暗色主題 */
+    .main {
+        background: linear-gradient(180deg, #0a1625, #0f2a4a);
+        color: #e0f0ff;
     }
     
-    /* 魚類卡片 */
+    h1, h2, h3 {
+        color: #67e8f9 !important;
+        text-shadow: 0 0 15px rgba(103, 232, 249, 0.5);
+    }
+    
+    p, li, label, .stMarkdown, .stCaption {
+        color: #b0c8e0 !important;
+        line-height: 1.7;
+    }
+    
+    /* 魚類卡片 - 高級暗色 */
     .fish-card {
-        background: linear-gradient(145deg, #1e3a5f, #264a75);
+        background: rgba(30, 58, 95, 0.85);
+        border: 1px solid rgba(103, 232, 249, 0.3);
         border-radius: 20px;
         padding: 25px;
-        border: 1px solid #4fc3f7;
-        margin-bottom: 25px;
+        backdrop-filter: blur(10px);
+        transition: all 0.4s ease;
     }
     .fish-card:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 15px 30px rgba(0, 183, 235, 0.25);
+        background: rgba(45, 75, 120, 0.95);
+        transform: translateY(-12px);
+        border-color: #67e8f9;
+        box-shadow: 0 20px 40px rgba(103, 232, 249, 0.15);
     }
     
     /* 輸入框 */
     .stTextInput input, .stTextArea textarea {
-        background-color: #1e3a5f !important;
-        color: #e8f1ff !important;
+        background-color: #1a2f4a !important;
+        color: #e0f0ff !important;
+        border: 1px solid #67e8f9 !important;
     }
     
+    /* 按鈕 */
     button {
-        background-color: #00acc1 !important;
+        background: linear-gradient(90deg, #00b8d4, #0288d1) !important;
         color: white !important;
+        font-weight: 600;
+        border: none;
+    }
+    
+    .stSidebar {
+        background: #0a1625;
     }
 </style>
 """, unsafe_allow_html=True)
