@@ -26,10 +26,43 @@ st.markdown("""
         box-shadow: 0 0 10px #00f5ff;
     }
     .fish-card {
-        background: rgba(30, 58, 95, 0.4);
-        border-radius: 12px;
-        padding: 20px;
-        border: 1px solid rgba(0, 245, 255, 0.2);
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 15px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        transition: all 0.3s ease-in-out;
+    }
+    .fish-card:hover {
+        transform: translateY(-4px);
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(0, 242, 254, 0.3);
+        box-shadow: 0 12px 40px 0 rgba(0, 242, 254, 0.15);
+    }
+    .fish-title {
+        color: #00f2fe; /* 科技感亮藍 */
+        font-size: 24px;
+        font-weight: 700;
+        margin-bottom: 2px;
+    }
+    .fish-en {
+        color: #8a9ba8;
+        font-size: 14px;
+        font-style: italic;
+        margin-bottom: 16px;
+        letter-spacing: 0.5px;
+    }
+    .fish-meta {
+        background: rgba(79, 172, 254, 0.1);
+        color: #4facfe;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        display: inline-block;
         margin-bottom: 15px;
     }
 </style>
@@ -71,6 +104,14 @@ init_db()
 
 if not os.path.exists("uploads"):
     os.makedirs("uploads")
+
+# 2. 新增按讚資料庫寫入邏輯
+def add_like(fish_id):
+    conn = sqlite3.connect("fish.db")
+    c = conn.cursor()
+    c.execute("UPDATE fish SET likes = likes + 1 WHERE id = ?", (fish_id,))
+    conn.commit()
+    conn.close()
 
 # 3. 安全的郵件寄送功能（改自 Streamlit Secrets）
 def send_email(user_name, user_email, subject, message):
