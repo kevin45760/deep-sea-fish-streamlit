@@ -130,16 +130,29 @@ def init_db():
     # ... 後續的 executemany
     
     # 檢查資料庫是否為空，若是，則自動匯入初始經典魚種
-    c.execute("SELECT COUNT(*) FROM fish")
-    if c.fetchone()[0] == 0:
-        default_fish = [
-            ("燈籠魚", "Anglerfish", "200-2000米", "頭頂發光釣竿吸引獵物，是最經典的深海魚。", "https://picsum.photos/id/201/500/300", 42, datetime.now().strftime("%Y-%m-%d %H:%M")),
-            ("蝰魚", "Viperfish", "500-4000米", "擁有超長尖牙，身軀細長如鋼絲。", "https://picsum.photos/id/251/500/300", 28, datetime.now().strftime("%Y-%m-%d %H:%M")),
-            ("加布林鯊", "Goblin Shark", "200-1300米", "活化石級別的鯊魚，可迅速伸出巨大下顎捕食。", "https://picsum.photos/id/866/500/300", 35, datetime.now().strftime("%Y-%m-%d %H:%M")),
-            ("水滴魚", "Blobfish", "600-1200米", "在深海高壓下擁有果凍狀的外表，常被稱為最憂傷的魚。", "https://picsum.photos/id/1015/500/300", 51, datetime.now().strftime("%Y-%m-%d %H:%M"))
-        ]
-        c.executemany("""INSERT INTO fish (name, en, depth, desc, img, likes, upload_time) 
-                         VALUES (?, ?, ?, ?, ?, ?, ?)""", default_fish)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS fish (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            en TEXT,
+            depth TEXT,
+            desc TEXT,
+            img TEXT
+        )
+    """)
+    
+    # 🟢 2. 新增防呆：如果舊資料庫少了 likes，就自動幫它補上
+    try:
+        c.execute("ALTER TABLE fish ADD COLUMN likes INTEGER DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass # 欄位若已存在，就直接跳過不報錯
+
+    # 🟢 3. 新增防呆：如果舊資料庫少了 upload_time，就自動幫它補上
+    try:
+        c.execute("ALTER TABLE fish ADD COLUMN upload_time TEXT")
+    except sqlite3.OperationalError:
+        pass # 欄位若已存在，就直接跳過不報錯
+        
     conn.commit()
     conn.close()
 
