@@ -363,7 +363,7 @@ elif page == "🐟 魚類圖鑑":
     if st.session_state.get("upload_success_alert"):
         st.success("🎉 新物種登錄成功！已同步加入下方深海圖鑑供您檢視。")
         del st.session_state.upload_success_alert  # 顯示一次後清除旗標，防止重整時重複跳出
-    search = st.text_input("🔍 搜尋魚種 (請輸入中文或英文名稱)...", "").lower()
+    search = st.text_input("搜尋魚種", placeholder="輸入中文或英文名稱探索深海...", label_visibility="collapsed").lower()
     
     for f in all_fish_data:
         f_id, f_name, f_en, f_depth, f_desc, f_img, f_likes, f_time, f_uploader_id = f
@@ -421,7 +421,7 @@ elif page == "🐟 魚類圖鑑":
                                         st.rerun()
                                     else:
                                         st.error("❌ 必填欄位不可留白！")
-                                        
+
 elif page == "📸 相關資料上傳":
     st.title("📸 上傳你的深海魚發現")
     with st.form("upload_form", clear_on_submit=True):
