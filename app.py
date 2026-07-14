@@ -407,7 +407,7 @@ elif page == "🐟 魚類圖鑑":
                                     else:
                                         st.error("❌ 必填欄位不可留白！")
 
-elif page == "📸 照片上傳":
+elif page == "📸 相關資料上傳":
     st.title("📸 上傳你的深海魚發現")
     with st.form("upload_form", clear_on_submit=True):
         name = st.text_input("魚類中文名稱 *")
