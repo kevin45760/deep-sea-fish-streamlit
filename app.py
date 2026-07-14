@@ -60,7 +60,7 @@ st.markdown("""
         margin-bottom: 12px;
         letter-spacing: 0.5px;
     }
-
+            
     .fish-meta {
         background: rgba(0, 229, 255, 0.08);
         color: #00e5ff;
@@ -111,12 +111,13 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+DB_NAME = "fish_v3.db"
+
 # 2. 資料庫初始化與資料播種 (Seeding)
 def init_db():
-    conn = sqlite3.connect("fish_v3.db")
+    conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     # 加上這行：每次初始化時若欄位不對，就直接砍掉重建
-    c.execute("DROP TABLE IF EXISTS fish") 
     c.execute("""CREATE TABLE IF NOT EXISTS fish (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT,
@@ -124,7 +125,7 @@ def init_db():
                     depth TEXT,
                     desc TEXT,
                     img TEXT,
-                    likes INTEGER,
+                    likes INTEGER DEFAULT 0,
                     upload_time TEXT
                 )""")
     # ... 後續的 executemany
@@ -141,33 +142,36 @@ def init_db():
         )
     """)
     
-    # 🟢 2. 新增防呆：如果舊資料庫少了 likes，就自動幫它補上
+    # 防呆：如果以前建立的表漏了 likes 欄位，自動幫舊資料庫補上
     try:
         c.execute("ALTER TABLE fish ADD COLUMN likes INTEGER DEFAULT 0")
     except sqlite3.OperationalError:
-        pass # 欄位若已存在，就直接跳過不報錯
+        pass
 
-    # 🟢 3. 新增防呆：如果舊資料庫少了 upload_time，就自動幫它補上
+    # 防呆：如果以前建立的表漏了 upload_time 欄位，自動幫舊資料庫補上
     try:
         c.execute("ALTER TABLE fish ADD COLUMN upload_time TEXT")
     except sqlite3.OperationalError:
-        pass # 欄位若已存在，就直接跳過不報錯
+        pass
+        
+    # 🟢 播種 (Seeding)：若資料庫完全是空的，自動塞入兩隻經典預設魚，避免畫面光禿禿
+    c.execute("SELECT COUNT(*) FROM fish")
+    if c.fetchone()[0] == 0:
+        default_data = [
+            ("鮟鱇魚", "Lophiiformes", "1000m - 4000m", "深海中的偽裝大師，頭頂有發光的小燈籠用來引誘食物。", "https://picsum.photos/id/1015/400/300", 0, datetime.now().strftime("%Y-%m-%d %H:%M")),
+            ("大王具足蟲", "Bathynomus giganteus", "200m - 1000m", "深海的溫和清道夫，體型巨大的等足類生物。", "https://picsum.photos/id/1020/400/300", 0, datetime.now().strftime("%Y-%m-%d %H:%M"))
+        ]
+        c.executemany("""INSERT INTO fish (name, en, depth, desc, img, likes, upload_time) 
+                         VALUES (?, ?, ?, ?, ?, ?, ?)""", default_data)
         
     conn.commit()
     conn.close()
 
+# 呼叫初始化
 init_db()
 
 if not os.path.exists("uploads"):
     os.makedirs("uploads")
-
-# 2. 新增按讚資料庫寫入邏輯
-def add_like(fish_id):
-    conn = sqlite3.connect("fish_v3.db")
-    c = conn.cursor()
-    c.execute("UPDATE fish SET likes = likes + 1 WHERE id = ?", (fish_id,))
-    conn.commit()
-    conn.close()
 
 def parse_depth_range(depth_str):
     """將資料庫的深度文字（如 '200m - 1000m' 或 '4000m+'）轉換成 (min, max) 數值"""
@@ -209,7 +213,7 @@ def send_email(user_name, user_email, subject, message):
 
 # 4. 資料庫核心操作
 def load_fish():
-    conn = sqlite3.connect('deepsea.db')
+    conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     c.execute("SELECT * FROM fish ORDER BY id DESC")
     fish = c.fetchall()
@@ -217,7 +221,7 @@ def load_fish():
     return fish
 
 def add_fish(name, en, depth, desc, img):
-    conn = sqlite3.connect('deepsea.db')
+    conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     c.execute("""INSERT INTO fish (name, en, depth, desc, img, likes, upload_time) 
                  VALUES (?, ?, ?, ?, ?, 0, ?)""",
@@ -226,7 +230,7 @@ def add_fish(name, en, depth, desc, img):
     conn.close()
 
 def like_fish(fish_id):
-    conn = sqlite3.connect('deepsea.db')
+    conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     c.execute("UPDATE fish SET likes = likes + 1 WHERE id = ?", (fish_id,))
     conn.commit()
@@ -316,7 +320,7 @@ elif page == "🐟 魚類圖鑑":
                     with col_b:
                         if st.button("🔗 分享專屬連結", key=f"share_{f_id}"):
                             st.code(f"https://share.streamlit.io/your-username/repo-name/~/fish_id={f_id}", language=None)
-                st.markdown('</div>', unsafe_allow_html=True)   
+            
 
 elif page == "📸 照片上傳":
     st.title("📸 上傳你的深海魚發現")
