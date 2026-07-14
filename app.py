@@ -31,38 +31,44 @@ st.markdown("""
         -webkit-backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 16px;
-        padding: 24px;
-        margin-bottom: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
         transition: all 0.3s ease-in-out;
     }
     .fish-card:hover {
-        transform: translateY(-4px);
+        transform: translateY(-3px);
         background: rgba(255, 255, 255, 0.06);
         border-color: rgba(0, 242, 254, 0.3);
         box-shadow: 0 12px 40px 0 rgba(0, 242, 254, 0.15);
     }
     .fish-title {
-        color: #00f2fe; /* 科技感亮藍 */
-        font-size: 24px;
+        color: #00f2fe; 
+        font-size: 22px;
         font-weight: 700;
         margin-bottom: 2px;
     }
     .fish-en {
         color: #8a9ba8;
-        font-size: 14px;
+        font-size: 13px;
         font-style: italic;
-        margin-bottom: 16px;
-        letter-spacing: 0.5px;
+        margin-bottom: 12px;
     }
     .fish-meta {
         background: rgba(79, 172, 254, 0.1);
         color: #4facfe;
-        padding: 4px 10px;
-        border-radius: 8px;
-        font-size: 13px;
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-size: 12px;
         font-weight: 600;
         display: inline-block;
+        margin-bottom: 12px;
+    }
+    .fish-desc {
+        color: #e1e8ed; 
+        line-height: 1.6; 
+        font-size: 14px; 
+        margin-top: 5px;
         margin-bottom: 15px;
     }
 </style>
@@ -187,28 +193,34 @@ elif page == "🐟 魚類圖鑑":
     search = st.text_input("🔍 搜尋魚種 (請輸入中文或英文名稱)...", "").lower()
     
     for f in all_fish_data:
-        f_id, f_name, f_en, f_depth, f_desc, f_img, f_likes, _ = f
-        if search in f_name.lower() or search in f_en.lower():
-            # 使用自訂的 CSS 容器包裝
-            st.markdown(f'<div class="fish-card">', unsafe_allow_html=True)
-            col1, col2 = st.columns([1, 2])
-            with col1:
-                st.image(f_img, use_column_width=True)
-            with col2:
-                st.subheader(f"{f_name} ({f_en})")
-                st.caption(f"棲息深度：{f_depth} | ❤️ 喜愛度：{f_likes}")
-                st.write(f_desc)
-                
-                col_a, col_b = st.columns(2)
-                with col_a:
-                    if st.button(f"❤️ 喜歡 ({f_likes})", key=f"like_{f_id}"):
-                        like_fish(f_id)
-                        st.success("已為牠集氣！")
-                        st.rerun()
-                with col_b:
-                    if st.button("🔗 分享專屬連結", key=f"share_{f_id}"):
-                        st.code(f"https://share.streamlit.io/your-username/repo-name/~/fish_id={f_id}", language=None)
-            st.markdown('</div>', unsafe_allow_html=True)
+    f_id, f_name, f_en, f_depth, f_desc, f_img, f_likes, _ = f
+    if search in f_name.lower() or search in f_en.lower():
+        # 使用自訂的 CSS 容器包裝
+        st.markdown(f'<div class="fish-card">', unsafe_allow_html=True)
+        col1, col2 = st.columns([1, 2])
+        with col1:
+            st.image(f_img, use_column_width=True)
+        with col2:
+            # 🟢 調整部分：替換為精緻的 HTML 樣式標題與標籤，其餘邏輯不變
+            st.markdown(f"""
+                <div class="fish-title">🐟 {f_name}</div>
+                <div class="fish-en">{f_en}</div>
+                <div class="fish-meta">📍 棲息深度：{f_depth}</div>
+                <p class="fish-desc">{f_desc}</p>
+            """, unsafe_allow_html=True)
+            
+            # 原本的互動按鈕，完整保留！
+            col_a, col_b = st.columns(2)
+            with col_a:
+                if st.button(f"❤️ 喜歡 ({f_likes})", key=f"like_{f_id}"):
+                    like_fish(f_id)
+                    st.success("已為牠集氣！")
+                    st.rerun()
+            with col_b:
+                if st.button("🔗 分享專屬連結", key=f"share_{f_id}"):
+                    st.code(f"https://share.streamlit.io/your-username/repo-name/~/fish_id={f_id}", language=None)
+                    
+        st.markdown('</div>', unsafe_allow_html=True)
 
 elif page == "📸 照片上傳":
     st.title("📸 上傳你的深海魚發現")
