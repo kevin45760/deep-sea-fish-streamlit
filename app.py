@@ -37,12 +37,21 @@ st.markdown("""
 
 # 2. 資料庫初始化與資料播種 (Seeding)
 def init_db():
-    conn = sqlite3.connect('deepsea.db')
+    conn = sqlite3.connect("fish.db")
     c = conn.cursor()
-    # 確保 ID 使用 AUTOINCREMENT
-    c.execute('''CREATE TABLE IF NOT EXISTS fish
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, en TEXT, depth TEXT, 
-                  desc TEXT, img TEXT, likes INTEGER DEFAULT 0, upload_time TEXT)''')
+    # 加上這行：每次初始化時若欄位不對，就直接砍掉重建
+    c.execute("DROP TABLE IF EXISTS fish") 
+    c.execute("""CREATE TABLE IF NOT EXISTS fish (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT,
+                    en TEXT,
+                    depth TEXT,
+                    desc TEXT,
+                    img TEXT,
+                    likes INTEGER,
+                    upload_time TEXT
+                )""")
+    # ... 後續的 executemany
     
     # 檢查資料庫是否為空，若是，則自動匯入初始經典魚種
     c.execute("SELECT COUNT(*) FROM fish")
