@@ -855,7 +855,7 @@ elif page == "ℹ️ 關於我們":
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
     ">
         <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
-            <img src="hhttps://i.ibb.co/gL8gG7wP/F4-EDD8-BD-C778-4-E4-B-B752-801-DB1863375.jpg" style="
+            <a href="https://ibb.co/v6WzbBmQ"><img src="hhttps://i.ibb.co/gL8gG7wP/F4-EDD8-BD-C778-4-E4-B-B752-801-DB1863375.jpg" style="
                 width: 60px; 
                 height: 60px; 
                 border-radius: 50%; 
