@@ -6,9 +6,14 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import re
+import uuid
 
 # 1. 網頁基本設定
 st.set_page_config(page_title="深海奇蹟", page_icon="🌊", layout="wide")
+
+# 🟢 2. 初始化瀏覽器身分代碼 (如果沒有的話就發配一張)
+if "user_id" not in st.session_state:
+    st.session_state.user_id = str(uuid.uuid4())
 
 # 注入自訂 CSS，打造深海科技感視覺
 st.markdown("""
@@ -144,30 +149,33 @@ def init_db():
     
     # 防呆：如果以前建立的表漏了 likes 欄位，自動幫舊資料庫補上
     try:
+        c.execute("ALTER TABLE fish ADD COLUMN uploader_id TEXT")
+    except sqlite3.OperationalError:
+        pass
+
+    try:
         c.execute("ALTER TABLE fish ADD COLUMN likes INTEGER DEFAULT 0")
     except sqlite3.OperationalError:
         pass
 
-    # 防呆：如果以前建立的表漏了 upload_time 欄位，自動幫舊資料庫補上
     try:
         c.execute("ALTER TABLE fish ADD COLUMN upload_time TEXT")
     except sqlite3.OperationalError:
         pass
         
-    # 🟢 播種 (Seeding)：若資料庫完全是空的，自動塞入兩隻經典預設魚，避免畫面光禿禿
+    # 播種資料（系統內建的魚，上傳者標註為 "system"）
     c.execute("SELECT COUNT(*) FROM fish")
     if c.fetchone()[0] == 0:
         default_data = [
-            ("鮟鱇魚", "Lophiiformes", "1000m - 4000m", "深海中的偽裝大師，頭頂有發光的小燈籠用來引誘食物。", "https://picsum.photos/id/1015/400/300", 0, datetime.now().strftime("%Y-%m-%d %H:%M")),
-            ("大王具足蟲", "Bathynomus giganteus", "200m - 1000m", "深海的溫和清道夫，體型巨大的等足類生物。", "https://picsum.photos/id/1020/400/300", 0, datetime.now().strftime("%Y-%m-%d %H:%M"))
+            ("鮟鱇魚", "Lophiiformes", "1000m - 4000m", "深海中的偽裝大師，頭頂有發光的小燈籠用來引誘食物。", "https://picsum.photos/id/1015/400/300", 0, datetime.now().strftime("%Y-%m-%d %H:%M"), "system"),
+            ("大王具足蟲", "Bathynomus giganteus", "200m - 1000m", "深海的溫和清道夫，體型巨大的等足類生物。", "https://picsum.photos/id/1020/400/300", 0, datetime.now().strftime("%Y-%m-%d %H:%M"), "system")
         ]
-        c.executemany("""INSERT INTO fish (name, en, depth, desc, img, likes, upload_time) 
-                         VALUES (?, ?, ?, ?, ?, ?, ?)""", default_data)
+        c.executemany("""INSERT INTO fish (name, en, depth, desc, img, likes, upload_time, uploader_id) 
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?)""", default_data)
         
     conn.commit()
     conn.close()
 
-# 呼叫初始化
 init_db()
 
 if not os.path.exists("uploads"):
@@ -220,12 +228,13 @@ def load_fish():
     conn.close()
     return fish
 
-def add_fish(name, en, depth, desc, img):
+# 🟢 修改：將 uploader_id 儲存進資料庫
+def add_fish(name, en, depth, desc, img, uploader_id):
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
-    c.execute("""INSERT INTO fish (name, en, depth, desc, img, likes, upload_time) 
-                 VALUES (?, ?, ?, ?, ?, 0, ?)""",
-              (name, en, depth, desc, img, datetime.now().strftime("%Y-%m-%d %H:%M")))
+    c.execute("""INSERT INTO fish (name, en, depth, desc, img, likes, upload_time, uploader_id) 
+                 VALUES (?, ?, ?, ?, ?, 0, ?, ?)""",
+              (name, en, depth, desc, img, datetime.now().strftime("%Y-%m-%d %H:%M"), uploader_id))
     conn.commit()
     conn.close()
 
@@ -233,6 +242,16 @@ def like_fish(fish_id):
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     c.execute("UPDATE fish SET likes = likes + 1 WHERE id = ?", (fish_id,))
+    conn.commit()
+    conn.close()
+
+# 🟢 新增：修改資料的資料庫更新函數
+def update_fish(fish_id, name, en, depth, desc):
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute("""UPDATE fish 
+                 SET name = ?, en = ?, depth = ?, desc = ? 
+                 WHERE id = ?""", (name, en, depth, desc, fish_id))
     conn.commit()
     conn.close()
 
@@ -288,7 +307,7 @@ elif page == "🐟 魚類圖鑑":
     search = st.text_input("🔍 搜尋魚種 (請輸入中文或英文名稱)...", "").lower()
     
     for f in all_fish_data:
-        f_id, f_name, f_en, f_depth, f_desc, f_img, f_likes, _ = f
+        f_id, f_name, f_en, f_depth, f_desc, f_img, f_likes, f_time, f_uploader_id = f
         
         # 解析該魚類的深度區間
         fish_min, fish_max = parse_depth_range(f_depth)
@@ -320,7 +339,29 @@ elif page == "🐟 魚類圖鑑":
                     with col_b:
                         if st.button("🔗 分享專屬連結", key=f"share_{f_id}"):
                             st.code(f"https://share.streamlit.io/your-username/repo-name/~/fish_id={f_id}", language=None)
-            
+
+                    # 🟢 新增：辨識是否為當前瀏覽器上傳的魚，若是則顯示修改表單切換開關
+                    if f_uploader_id == st.session_state.user_id:
+                        st.markdown("---")
+                        # 使用 st.toggle 來切換顯示編輯面板，既好看又省空間
+                        show_edit = st.toggle("✏️ 編輯我的發現", key=f"toggle_{f_id}")
+                        
+                        if show_edit:
+                            with st.form(key=f"edit_form_{f_id}"):
+                                st.write("📝 **更新魚類資訊**")
+                                edit_name = st.text_input("魚類中文名稱", value=f_name)
+                                edit_en = st.text_input("英文學名", value=f_en)
+                                edit_depth = st.text_input("發現深度", value=f_depth)
+                                edit_desc = st.text_area("外觀與習性描述", value=f_desc)
+                                
+                                submit_edit = st.form_submit_button("💾 儲存修改")
+                                if submit_edit:
+                                    if edit_name and edit_depth and edit_desc:
+                                        update_fish(f_id, edit_name, edit_en, edit_depth, edit_desc)
+                                        st.success("✅ 資料更新成功！")
+                                        st.rerun()
+                                    else:
+                                        st.error("❌ 必填欄位不可留白！")
 
 elif page == "📸 照片上傳":
     st.title("📸 上傳你的深海魚發現")
@@ -337,7 +378,8 @@ elif page == "📸 照片上傳":
                 file_path = os.path.join("uploads", uploaded_file.name)
                 with open(file_path, "wb") as f:
                     f.write(uploaded_file.getbuffer())
-                add_fish(name, en, depth, desc, file_path)
+                # 🟢 修改：將當前會話的 st.session_state.user_id 傳入
+                add_fish(name, en, depth, desc, file_path, st.session_state.user_id)
                 st.success("✅ 成功上傳！新物種已加入深海圖鑑。")
                 st.balloons()
                 st.rerun()
