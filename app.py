@@ -12,36 +12,45 @@ st.set_page_config(page_title="深海奇蹟", page_icon="🌊", layout="wide")
 # 注入自訂 CSS，打造深海科技感視覺
 st.markdown("""
 <style>
-    .reportview-container { background: #0a1f3d; }
+    /* 🟢 修正 1：修改現代 Streamlit 全域背景顏色 */
+    [data-testid="stAppViewContainer"] { 
+        background: #0a1f3d !important; 
+    }
+
+    /* 🟢 修正 2：將按鈕樣式加上 !important 防止被官方主題覆蓋 */
     .stButton>button {
-        background-color: #1e3a5f;
-        color: #00f5ff;
-        border-radius: 8px;
-        border: 1px solid #00f5ff;
-        transition: all 0.3s;
+        background-color: #1e3a5f !important;
+        color: #00f5ff !important;
+        border-radius: 8px !important;
+        border: 1px solid #00f5ff !important;
+        transition: all 0.3s !important;
     }
     .stButton>button:hover {
-        background-color: #00f5ff;
-        color: #0a1f3d;
-        box-shadow: 0 0 10px #00f5ff;
+        background-color: #00f5ff !important;
+        color: #0a1f3d !important;
+        box-shadow: 0 0 10px #00f5ff !important;
     }
-    .fish-card {
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 16px;
-        padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-        transition: all 0.3s ease-in-out;
+
+    /* 🟢 修正 3：將原本的 .fish-card 改綁在 st.container(border=True) 的原生容器上 */
+    div[data-testid="stVerticalBlockBorder"] {
+        background: rgba(255, 255, 255, 0.03) !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 16px !important;
+        padding: 20px !important;
+        margin-bottom: 20px !important;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
+        transition: all 0.3s ease-in-out !important;
     }
-    .fish-card:hover {
-        transform: translateY(-3px);
-        background: rgba(255, 255, 255, 0.06);
-        border-color: rgba(0, 242, 254, 0.3);
-        box-shadow: 0 12px 40px 0 rgba(0, 242, 254, 0.15);
+    div[data-testid="stVerticalBlockBorder"]:hover {
+        transform: translateY(-3px) !important;
+        background: rgba(255, 255, 255, 0.06) !important;
+        border-color: rgba(0, 242, 254, 0.3) !important;
+        box-shadow: 0 12px 40px 0 rgba(0, 242, 254, 0.15) !important;
     }
+
+    /* 內部的文字 HTML 樣式保留，因為這是你自訂的 class，運作完全沒問題 */
     .fish-title {
         color: #00f2fe; 
         font-size: 22px;
