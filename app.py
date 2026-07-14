@@ -6,15 +6,55 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
+# 1. 網頁基本設定
 st.set_page_config(page_title="深海奇蹟", page_icon="🌊", layout="wide")
 
-# 初始化 SQLite
+# 注入自訂 CSS，打造深海科技感視覺
+st.markdown("""
+<style>
+    .reportview-container { background: #0a1f3d; }
+    .stButton>button {
+        background-color: #1e3a5f;
+        color: #00f5ff;
+        border-radius: 8px;
+        border: 1px solid #00f5ff;
+        transition: all 0.3s;
+    }
+    .stButton>button:hover {
+        background-color: #00f5ff;
+        color: #0a1f3d;
+        box-shadow: 0 0 10px #00f5ff;
+    }
+    .fish-card {
+        background: rgba(30, 58, 95, 0.4);
+        border-radius: 12px;
+        padding: 20px;
+        border: 1px solid rgba(0, 245, 255, 0.2);
+        margin-bottom: 15px;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# 2. 資料庫初始化與資料播種 (Seeding)
 def init_db():
     conn = sqlite3.connect('deepsea.db')
     c = conn.cursor()
+    # 確保 ID 使用 AUTOINCREMENT
     c.execute('''CREATE TABLE IF NOT EXISTS fish
-                 (id INTEGER PRIMARY KEY, name TEXT, en TEXT, depth TEXT, 
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, en TEXT, depth TEXT, 
                   desc TEXT, img TEXT, likes INTEGER DEFAULT 0, upload_time TEXT)''')
+    
+    # 檢查資料庫是否為空，若是，則自動匯入初始經典魚種
+    c.execute("SELECT COUNT(*) FROM fish")
+    if c.fetchone()[0] == 0:
+        default_fish = [
+            ("燈籠魚", "Anglerfish", "200-2000米", "頭頂發光釣竿吸引獵物，是最經典的深海魚。", "https://picsum.photos/id/201/500/300", 42, datetime.now().strftime("%Y-%m-%d %H:%M")),
+            ("蝰魚", "Viperfish", "500-4000米", "擁有超長尖牙，身軀細長如鋼絲。", "https://picsum.photos/id/251/500/300", 28, datetime.now().strftime("%Y-%m-%d %H:%M")),
+            ("加布林鯊", "Goblin Shark", "200-1300米", "活化石級別的鯊魚，可迅速伸出巨大下顎捕食。", "https://picsum.photos/id/866/500/300", 35, datetime.now().strftime("%Y-%m-%d %H:%M")),
+            ("水滴魚", "Blobfish", "600-1200米", "在深海高壓下擁有果凍狀的外表，常被稱為最憂傷的魚。", "https://picsum.photos/id/1015/500/300", 51, datetime.now().strftime("%Y-%m-%d %H:%M"))
+        ]
+        c.executemany("""INSERT INTO fish (name, en, depth, desc, img, likes, upload_time) 
+                         VALUES (?, ?, ?, ?, ?, ?, ?)""", default_fish)
     conn.commit()
     conn.close()
 
@@ -23,30 +63,20 @@ init_db()
 if not os.path.exists("uploads"):
     os.makedirs("uploads")
 
+# 3. 安全的郵件寄送功能（改自 Streamlit Secrets）
 def send_email(user_name, user_email, subject, message):
     try:
-        # === 請填入你的 Gmail 資訊 ===
-        sender_email = "你的gmail@gmail.com"      # ← 改成你的 Gmail
-        sender_password = "你的App密碼"           # ← 改成 Gmail App 密碼（不是一般密碼）
-        receiver_email = "你的gmail@gmail.com"    # ← 接收郵件的信箱
+        # 從安全設定檔讀取憑證，避免洩漏於 GitHub
+        sender_email = st.secrets["gmail"]["sender_email"]
+        sender_password = st.secrets["gmail"]["sender_password"]
+        receiver_email = st.secrets["gmail"]["receiver_email"]
         
         msg = MIMEMultipart()
         msg['From'] = sender_email
         msg['To'] = receiver_email
         msg['Subject'] = f"深海奇蹟網站留言 - {subject or '無主旨'}"
         
-        body = f"""
-        收到新留言！
-        
-        姓名：{user_name}
-        信箱：{user_email}
-        主旨：{subject}
-        
-        訊息內容：
-        {message}
-        
-        時間：{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-        """
+        body = f"收到新留言！\n\n姓名：{user_name}\n信箱：{user_email}\n主旨：{subject}\n\n訊息內容：\n{message}\n\n時間：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         msg.attach(MIMEText(body, 'plain'))
         
         server = smtplib.SMTP('smtp.gmail.com', 587)
@@ -56,14 +86,14 @@ def send_email(user_name, user_email, subject, message):
         server.quit()
         return True
     except Exception as e:
-        st.error(f"錯誤：{str(e)}")
+        st.error(f"郵件系統錯誤：{str(e)}（請檢查 Secrets 設定是否正確）")
         return False
 
-# 資料庫函數
+# 4. 資料庫核心操作
 def load_fish():
     conn = sqlite3.connect('deepsea.db')
     c = conn.cursor()
-    c.execute("SELECT * FROM fish")
+    c.execute("SELECT * FROM fish ORDER BY id DESC")
     fish = c.fetchall()
     conn.close()
     return fish
@@ -85,120 +115,102 @@ def like_fish(fish_id):
     conn.close()
 
 # ==================== 側邊導航 ====================
-page = st.sidebar.selectbox("🌊 選擇頁面",
-    ["🏠 首頁", "🐟 魚類圖鑑", "📸 照片上傳", "📧 聯絡我們", "ℹ️ 關於我們"])
-
+page = st.sidebar.selectbox("🌊 選擇頁面", ["🏠 首頁", "🐟 魚類圖鑑", "📸 照片上傳", "📧 聯絡我們", "ℹ️ 關於我們"])
 st.sidebar.markdown("---")
-st.sidebar.info("一起守護深海生態！")
+st.sidebar.info("🐋 一起守護深海生態！")
 
-# ==================== 首頁 ====================
+# ==================== 頁面邏輯 ====================
+all_fish_data = load_fish()
+
 if page == "🏠 首頁":
     st.title("🌊 深海奇蹟")
     st.subheader("探索黑暗深淵的神秘生物")
     st.image("https://picsum.photos/id/1015/1200/500", use_column_width=True)
     
-    fish_count = len(load_fish())
     col1, col2, col3 = st.columns(3)
-    with col1: st.metric("已收錄魚種", fish_count + 4)
-    with col2: st.metric("最深紀錄", "4000 米")
-    with col3: st.metric("探索者", "你也是！")
+    with col1: st.metric("已收錄魚種", len(all_fish_data))
+    with col2: st.metric("最深紀錄", "4,000 米")
+    with col3: st.metric("探索者生態圈", "歡迎你的加入")
 
-# ==================== 魚類圖鑑 ====================
 elif page == "🐟 魚類圖鑑":
     st.title("🐟 深海魚類圖鑑")
-    search = st.text_input("🔍 搜尋魚種", "").lower()
+    search = st.text_input("🔍 搜尋魚種 (請輸入中文或英文名稱)...", "").lower()
     
-    fish_list = load_fish()
-    default_fish = [
-        {"id": 0, "name": "燈籠魚", "en": "Anglerfish", "depth": "200-2000米", "desc": "頭頂發光釣竿吸引獵物", "img": "https://picsum.photos/id/201/500/300", "likes": 42},
-        {"id": 0, "name": "蝰魚", "en": "Viperfish", "depth": "500-4000米", "desc": "擁有超長尖牙", "img": "https://picsum.photos/id/251/500/300", "likes": 28},
-        {"id": 0, "name": "Goblin Shark", "en": "Goblin Shark", "depth": "200-1300米", "desc": "可伸出巨大下顎", "img": "https://picsum.photos/id/866/500/300", "likes": 35},
-        {"id": 0, "name": "鮟鱇魚", "en": "Blobfish", "depth": "600-1200米", "desc": "果凍般的外表", "img": "https://picsum.photos/id/1015/500/300", "likes": 51},
-    ]
-    
-    all_fish = default_fish + [{"id": f[0], "name": f[1], "en": f[2], "depth": f[3], "desc": f[4], "img": f[5], "likes": f[6]} for f in fish_list]
-    
-    for fish in all_fish:
-        if search in fish["name"].lower() or search in fish.get("en","").lower():
-            with st.container(border=True):
-                col1, col2 = st.columns([1, 2])
-                with col1:
-                    st.image(fish["img"], use_column_width=True)
-                with col2:
-                    st.subheader(f"{fish['name']} ({fish.get('en', '')})")
-                    st.caption(f"深度：{fish['depth']} | ❤️ {fish['likes']}")
-                    st.write(fish["desc"])
-                    
-                    col_a, col_b = st.columns(2)
-                    with col_a:
-                        if st.button("❤️ 喜歡", key=f"like_{fish.get('id', fish['name'])}"):
-                            if fish['id'] > 0:
-                                like_fish(fish['id'])
-                            st.success("已加入喜歡！")
-                            st.rerun()
-                    with col_b:
-                        if st.button("🔗 分享", key=f"share_{fish['name']}"):
-                            st.code(f"https://deepsea.yourname.com/fish/{fish['name']}", language=None)
+    for f in all_fish_data:
+        f_id, f_name, f_en, f_depth, f_desc, f_img, f_likes, _ = f
+        if search in f_name.lower() or search in f_en.lower():
+            # 使用自訂的 CSS 容器包裝
+            st.markdown(f'<div class="fish-card">', unsafe_allow_html=True)
+            col1, col2 = st.columns([1, 2])
+            with col1:
+                st.image(f_img, use_column_width=True)
+            with col2:
+                st.subheader(f"{f_name} ({f_en})")
+                st.caption(f"棲息深度：{f_depth} | ❤️ 喜愛度：{f_likes}")
+                st.write(f_desc)
+                
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    if st.button(f"❤️ 喜歡 ({f_likes})", key=f"like_{f_id}"):
+                        like_fish(f_id)
+                        st.success("已為牠集氣！")
+                        st.rerun()
+                with col_b:
+                    if st.button("🔗 分享專屬連結", key=f"share_{f_id}"):
+                        st.code(f"https://share.streamlit.io/your-username/repo-name/~/fish_id={f_id}", language=None)
+            st.markdown('</div>', unsafe_allow_html=True)
 
-# ==================== 照片上傳 ====================
 elif page == "📸 照片上傳":
-    st.title("📸 上傳你的深海魚照片")
-    name = st.text_input("魚類名稱")
-    desc = st.text_area("簡單描述")
-    uploaded_file = st.file_uploader("選擇照片", type=["jpg", "png", "jpeg"])
-    
-    if st.button("🚀 上傳照片"):
-        if uploaded_file and name:
-            file_path = os.path.join("uploads", uploaded_file.name)
-            with open(file_path, "wb") as f:
-                f.write(uploaded_file.getbuffer())
-            add_fish(name, "", "未知", desc, file_path)
-            st.success("✅ 上傳成功！")
-            st.balloons()
-        else:
-            st.error("請填寫名稱並上傳照片")
+    st.title("📸 上傳你的深海魚發現")
+    with st.form("upload_form", clear_on_submit=True):
+        name = st.text_input("魚類中文名稱 *")
+        en = st.text_input("英文學名 (選填)")
+        depth = st.text_input("發現深度 (例如: 800米) *")
+        desc = st.text_area("外觀與習性描述 *")
+        uploaded_file = st.file_uploader("選擇照片", type=["jpg", "png", "jpeg"])
+        submitted = st.form_submit_button("🚀 發布至圖鑑")
+        
+        if submitted:
+            if uploaded_file and name and depth and desc:
+                file_path = os.path.join("uploads", uploaded_file.name)
+                with open(file_path, "wb") as f:
+                    f.write(uploaded_file.getbuffer())
+                add_fish(name, en, depth, desc, file_path)
+                st.success("✅ 成功上傳！新物種已加入深海圖鑑。")
+                st.balloons()
+                st.rerun()
+            else:
+                st.error("❌ 請完整填寫必填欄位並上傳照片！")
 
-# ==================== 聯絡我們 ====================
-# ==================== 聯絡我們 ====================
 elif page == "📧 聯絡我們":
     st.title("📧 聯絡我們")
-    st.write("有問題、建議或合作意願，歡迎留言，我們會盡快回覆！")
+    st.write("對深海世界有任何想法或指教？歡迎留言給我們！")
     
     with st.form("contact_form"):
         col1, col2 = st.columns(2)
-        with col1:
-            name = st.text_input("您的姓名 *")
-        with col2:
-            email = st.text_input("電子郵件 *")
+        with col1: name = st.text_input("您的姓名 *")
+        with col2: email = st.text_input("電子郵件 *")
         subject = st.text_input("主旨")
         message = st.text_area("您的訊息 *", height=150)
-        
         submitted = st.form_submit_button("📤 送出訊息")
         
         if submitted:
             if name and email and message:
-                success = send_email(name, email, subject, message)
-                if success:
-                    st.success("✅ 訊息已成功送出！感謝您的聯絡，我們會盡快回覆。")
+                if send_email(name, email, subject, message):
+                    st.success("✅ 訊息已成功送出！我們將儘速與您聯繫。")
                     st.balloons()
-                else:
-                    st.error("❌ 寄送失敗，請稍後再試或直接寄信給我們。")
             else:
-                st.warning("請填寫姓名、郵件和訊息內容")
+                st.warning("⚠️ 請完整填寫姓名、電子郵件與訊息內容。")
 
-# ==================== 關於我們 ====================
 elif page == "ℹ️ 關於我們":
-    st.title("關於深海奇蹟")
-    st.write("這個網站致力推廣深海生態知識，使用 Python + Streamlit + SQLite 開發。")
+    st.title("ℹ️ 關於深海奇蹟")
+    st.write("本計畫旨在透過現代 Web 技術，向大眾普及極限環境下的深海生態知識。")
+    st.info("🛠️ **技術堆疊**：Python 3.10+ / Streamlit / SQLite3")
 
-# ==================== Footer ====================
+# ==================== 頁尾 ====================
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: #88aadd; padding: 20px;'>
     <p>🌊 深海奇蹟 © 2026 | 守護海洋 從認識開始</p>
-    <p>
-        <a href="#" style="color:#67e8f9; text-decoration:none;">隱私權政策</a> | 
-        <a href="#" style="color:#67e8f9; text-decoration:none;">使用條款</a>
-    </p>
 </div>
 """, unsafe_allow_html=True)
