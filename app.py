@@ -845,6 +845,14 @@ elif page == "ℹ️ 關於我們":
     st.markdown("## 💻 遇見開發者")
     
     developer_html = """
+    <style>
+        /* 🪐 彈出放大時的順滑縮放動畫 */
+        @keyframes deepSeaZoom {
+            from { transform: scale(0.7); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+    </style>
+
     <div style="
         background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
         border-radius: 15px;
@@ -853,19 +861,49 @@ elif page == "ℹ️ 關於我們":
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        position: relative;
     ">
+        
+        <!-- 🔍 點擊放大專屬遮罩層 (Lightbox Modal) -->
+        <div id="avatarModal" onclick="closeAvatarModal()" style="
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(5, 11, 20, 0.85); 
+            backdrop-filter: blur(8px); 
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 999; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: zoom-out;
+        ">
+            <!-- 放大後的正方形照片（限制 260px 以配合 Streamlit 容器高度） -->
+            <img src="https://i.ibb.co/gL8gG7wP/F4-EDD8-BD-C778-4-E4-B-B752-801-DB1863375.jpg" style="
+                max-height: 260px; 
+                max-width: 260px; 
+                border-radius: 15px; 
+                border: 2px solid #00e5ff; 
+                box-shadow: 0 0 35px rgba(0, 229, 255, 0.6); 
+                animation: deepSeaZoom 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            ">
+        </div>
+
         <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
-            <a href="https://ibb.co/v6WzbBmQ" target="_blank">
-                <img src="https://i.ibb.co/gL8gG7wP/F4-EDD8-BD-C778-4-E4-B-B752-801-DB1863375.jpg" alt="Kevin Chen" style="
-                    width: 60px; 
-                    height: 60px; 
-                    border-radius: 50%; 
-                    object-fit: cover;
-                    border: 2px solid #00e5ff;
-                    box-shadow: 0 0 15px rgba(0, 229, 255, 0.5);
-                    cursor: pointer;
-                ">
-            </a>
+            <!-- 🎯 小大頭貼：移入微調放大、點擊觸發內建彈窗 -->
+            <img src="https://i.ibb.co/gL8gG7wP/F4-EDD8-BD-C778-4-E4-B-B752-801-DB1863375.jpg" onclick="openAvatarModal()" style="
+                width: 60px; 
+                height: 60px; 
+                border-radius: 50%; 
+                object-fit: cover;
+                border: 2px solid #00e5ff;
+                box-shadow: 0 0 15px rgba(0, 229, 255, 0.5);
+                cursor: zoom-in;
+                transition: transform 0.2s ease;
+            " onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
+            
             <div>
                 <h3 style="margin: 0; color: #ffffff; font-size: 22px; font-family: sans-serif;">Kevin Chen</h3>
                 <p style="margin: 5px 0 0 0; color: #00e5ff; font-size: 14px; font-weight: 500; letter-spacing: 0.5px;">
@@ -893,6 +931,16 @@ elif page == "ℹ️ 關於我們":
             <div>🎵 <b>程式燃料：</b> 寫 Code 時不可或缺的是 JADE、Deca Joins 與 Sunset Rollercoaster 的獨立音樂。</div>
         </div>
     </div>
+
+    <!-- 💡 控制彈出放大與縮小的純前端 JavaScript -->
+    <script>
+        function openAvatarModal() {
+            document.getElementById('avatarModal').style.display = 'flex';
+        }
+        function closeAvatarModal() {
+            document.getElementById('avatarModal').style.display = 'none';
+        }
+    </script>
     """
     
     st.components.v1.html(developer_html, height=360)
