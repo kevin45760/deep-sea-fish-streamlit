@@ -12,9 +12,16 @@ import time  # 🟢 引入時間模組，用來控制提示框顯示的停留時
 # 1. 網頁基本設定
 st.set_page_config(page_title="深海奇蹟", page_icon="🌊", layout="wide")
 
-# 🟢 2. 初始化瀏覽器身分代碼 (如果沒有的話就發配一張)
-if "user_id" not in st.session_state:
-    st.session_state.user_id = str(uuid.uuid4())
+# 🟢 2. 初始化瀏覽器身分代碼 (結合 st.query_params 讓 F5 刷新不失憶)
+if "uid" in st.query_params:
+    # 如果網址列有帶 uid 參數，直接拿來當作目前使用者的 user_id
+    st.session_state.user_id = st.query_params["uid"]
+else:
+    # 如果網址列沒有（全新訪客），檢查 session 內有沒有，都沒有才發配新的
+    if "user_id" not in st.session_state:
+        st.session_state.user_id = str(uuid.uuid4())
+    # 將這個 user_id 釘死到網址列上，這樣重整時就能被上方的 if 抓到
+    st.query_params["uid"] = st.session_state.user_id
 
 # 初始化側邊欄導航狀態
 if "nav_page" not in st.session_state:
@@ -393,10 +400,9 @@ elif page == "🐟 魚類圖鑑":
                         if st.button("🔗 分享專屬連結", key=f"share_{f_id}"):
                             st.code(f"https://share.streamlit.io/your-username/repo-name/~/fish_id={f_id}", language=None)
 
-                    # 🟢 新增：辨識是否為當前瀏覽器上傳的魚，若是則顯示修改表單切換開關
+                    # 🟢 當 user_id 成功鎖定在網址後，重整網頁這裡依然能通過驗證！
                     if f_uploader_id == st.session_state.user_id:
                         st.markdown("---")
-                        # 使用 st.toggle 來切換顯示編輯面板，既好看又省空間
                         show_edit = st.toggle("✏️ 編輯我的發現", key=f"toggle_{f_id}")
                         
                         if show_edit:
@@ -415,7 +421,7 @@ elif page == "🐟 魚類圖鑑":
                                         st.rerun()
                                     else:
                                         st.error("❌ 必填欄位不可留白！")
-
+                                        
 elif page == "📸 相關資料上傳":
     st.title("📸 上傳你的深海魚發現")
     with st.form("upload_form", clear_on_submit=True):
