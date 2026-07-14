@@ -1,7 +1,7 @@
 import streamlit as st
 import os
-from datetime import datetime
 import json
+from datetime import datetime
 
 st.set_page_config(page_title="深海奇蹟", page_icon="🌊", layout="wide")
 
@@ -22,8 +22,8 @@ def save_data(data):
 
 fish_data = load_data()
 
-# ==================== 側邊導航 ====================
-page = st.sidebar.selectbox("🌊 選擇頁面", 
+# 側邊導航
+page = st.sidebar.selectbox("🌊 選擇頁面",
     ["🏠 首頁", "🐟 魚類圖鑑", "📸 照片上傳", "ℹ️ 關於我們"])
 
 st.sidebar.markdown("---")
@@ -33,7 +33,6 @@ st.sidebar.info("深海探索者們，一起守護海洋！")
 if page == "🏠 首頁":
     st.title("🌊 深海奇蹟")
     st.subheader("探索黑暗深淵的神秘生物")
-    
     st.image("https://picsum.photos/id/1015/1200/500", use_column_width=True)
     
     col1, col2, col3 = st.columns(3)
@@ -48,28 +47,42 @@ if page == "🏠 首頁":
 elif page == "🐟 魚類圖鑑":
     st.title("🐟 深海魚類圖鑑")
     
-    search = st.text_input("🔍 搜尋魚種名稱")
+    # 優化搜尋
+    search = st.text_input("🔍 搜尋魚種（支援中文/英文）", "").lower()
     
-    # 預設魚類
     default_fish = [
-        {"name": "燈籠魚", "en": "Anglerfish", "depth": "200-2000米", "desc": "頭頂有發光釣竿，用來吸引獵物。雌魚遠大於雄魚。", "img": "https://picsum.photos/id/201/400/250"},
-        {"name": "蝰魚", "en": "Viperfish", "depth": "500-4000米", "desc": "擁有超長尖牙，能吞下比自己更大的獵物。", "img": "https://picsum.photos/id/251/400/250"},
-        {"name": "Goblin Shark", "en": "Goblin Shark", "depth": "200-1300米", "desc": "活化石級別，可伸出巨大下顎捕食。", "img": "https://picsum.photos/id/866/400/250"},
-        {"name": "鮟鱇魚", "en": "Blobfish", "depth": "600-1200米", "desc": "在深海高壓下像果凍，外表看起來很悲傷。", "img": "https://picsum.photos/id/1015/400/250"},
+        {"name": "燈籠魚", "en": "Anglerfish", "depth": "200-2000米", "desc": "頭頂有發光釣竿，用來吸引獵物。雌魚遠大於雄魚。", "img": "https://picsum.photos/id/201/500/300", "likes": 42},
+        {"name": "蝰魚", "en": "Viperfish", "depth": "500-4000米", "desc": "擁有超長尖牙，能吞下比自己更大的獵物。", "img": "https://picsum.photos/id/251/500/300", "likes": 28},
+        {"name": "Goblin Shark", "en": "Goblin Shark", "depth": "200-1300米", "desc": "活化石級別，可伸出巨大下顎捕食。", "img": "https://picsum.photos/id/866/500/300", "likes": 35},
+        {"name": "鮟鱇魚", "en": "Blobfish", "depth": "600-1200米", "desc": "在深海高壓下像果凍，外表看起來很悲傷。", "img": "https://picsum.photos/id/1015/500/300", "likes": 51},
     ]
     
     all_fish = default_fish + fish_data
     
-    for fish in all_fish:
-        if search.lower() in fish["name"].lower() or search.lower() in fish.get("en","").lower():
-            with st.container(border=True):
-                col1, col2 = st.columns([1, 2])
-                with col1:
-                    st.image(fish["img"], use_column_width=True)
-                with col2:
-                    st.subheader(f"{fish['name']} ({fish.get('en', '')})")
-                    st.caption(f"深度：{fish['depth']}")
-                    st.write(fish["desc"])
+    # 搜尋過濾
+    filtered_fish = [fish for fish in all_fish if 
+                     search in fish["name"].lower() or 
+                     search in fish.get("en","").lower() or 
+                     search in fish["desc"].lower()]
+    
+    for fish in filtered_fish:
+        with st.container(border=True):
+            col1, col2 = st.columns([1, 2])
+            with col1:
+                st.image(fish["img"], use_column_width=True)
+            with col2:
+                st.subheader(f"{fish['name']} ({fish.get('en', '')})")
+                st.caption(f"深度：{fish['depth']}")
+                st.write(fish["desc"])
+                
+                # 喜歡按鈕 + 分享
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    if st.button("❤️", key=f"like_{fish['name']}"):
+                        st.success("已加入收藏！")
+                with col_b:
+                    if st.button("🔗 分享", key=f"share_{fish['name']}"):
+                        st.code(f"https://你的網站網址/fish/{fish['name']}", language=None)
 
 # ==================== 照片上傳 ====================
 elif page == "📸 照片上傳":
@@ -107,5 +120,4 @@ elif page == "ℹ️ 關於我們":
     st.write("目的是讓更多人認識深海生態，珍惜我們的海洋。")
     st.info("💡 你也可以上傳照片一起豐富這個圖鑑！")
 
-# 美化效果
-st.caption("🌊 深海探索 永不止步")
+st.caption("🌊 深海探索 永不止步 | 目前版本已加入喜歡與分享功能")
