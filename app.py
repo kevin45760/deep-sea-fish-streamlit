@@ -348,6 +348,10 @@ if page == "🏠 首頁":
 
 elif page == "🐟 魚類圖鑑":
     st.title("🐟 深海魚類圖鑑")
+    # 🟢 新增修改：若檢查到上傳成功旗標，就在圖鑑最上方顯示成功字樣框做檢視
+    if st.session_state.get("upload_success_alert"):
+        st.success("🎉 新物種登錄成功！已同步加入下方深海圖鑑供您檢視。")
+        del st.session_state.upload_success_alert  # 顯示一次後清除旗標，防止重整時重複跳出
     search = st.text_input("🔍 搜尋魚種 (請輸入中文或英文名稱)...", "").lower()
     
     for f in all_fish_data:
@@ -427,6 +431,9 @@ elif page == "📸 相關資料上傳":
             # 寫入資料庫並取得新 ID
             new_fish_id = add_fish(name, en, depth, desc, file_path, st.session_state.user_id)
             st.session_state.success_fish_id = new_fish_id
+            # 🟢 修改點：設定提示框旗標，並直接更新 nav_page 狀態強制同步導向圖鑑頁
+            st.session_state.upload_success_alert = True
+            st.session_state.nav_page = "🐟 魚類圖鑑"
             
             # 🟢 在中下方跳出優雅的提示框，不噴彩帶，乾淨俐落
             st.success("✅ 新物種發布成功！正在為您導向檢視專頁...")
