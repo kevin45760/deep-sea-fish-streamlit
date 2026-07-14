@@ -943,7 +943,6 @@ elif page == "ℹ️ 關於我們":
     </script>
     """
     
-    st.components.v1.html(developer_html, height=360)
 
 # ==================== 頁尾 ====================
 st.markdown("<br><br><br>", unsafe_allow_html=True) # 留出推擠空間
