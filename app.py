@@ -855,14 +855,17 @@ elif page == "ℹ️ 關於我們":
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
     ">
         <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
-            <img src="https://i.ibb.co/gL8gG7wP/F4-EDD8-BD-C778-4-E4-B-B752-801-DB1863375.jpg" style="
-                width: 60px; 
-                height: 60px; 
-                border-radius: 50%; 
-                object-fit: cover;
-                border: 2px solid #00e5ff;
-                box-shadow: 0 0 15px rgba(0, 229, 255, 0.5);
-            ">
+            <a href="https://ibb.co/v6WzbBmQ" target="_blank">
+                <img src="https://i.ibb.co/gL8gG7wP/F4-EDD8-BD-C778-4-E4-B-B752-801-DB1863375.jpg" alt="Kevin Chen" style="
+                    width: 60px; 
+                    height: 60px; 
+                    border-radius: 50%; 
+                    object-fit: cover;
+                    border: 2px solid #00e5ff;
+                    box-shadow: 0 0 15px rgba(0, 229, 255, 0.5);
+                    cursor: pointer;
+                ">
+            </a>
             <div>
                 <h3 style="margin: 0; color: #ffffff; font-size: 22px; font-family: sans-serif;">Kevin Chen</h3>
                 <p style="margin: 5px 0 0 0; color: #00e5ff; font-size: 14px; font-weight: 500; letter-spacing: 0.5px;">
