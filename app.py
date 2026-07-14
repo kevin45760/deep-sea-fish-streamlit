@@ -262,7 +262,7 @@ def send_email(user_name, user_email, subject, message):
         msg = MIMEMultipart()
         msg['From'] = sender_email
         msg['To'] = receiver_email
-        msg['Subject'] = f"深海奇蹟網站留言 - {subject or '無主旨'}"
+        msg['Subject'] = f"您在深海未知的奧妙有留言 - {subject or '無主旨'}"
         
         body = f"收到新留言！\n\n姓名：{user_name}\n信箱：{user_email}\n主旨：{subject}\n\n訊息內容：\n{message}\n\n時間：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         msg.attach(MIMEText(body, 'plain'))
@@ -413,7 +413,7 @@ if "success_fish_id" in st.session_state:
 
 
 if page == "🏠 首頁":
-    st.title("🌊 深海奇蹟")
+    st.title("🌊 深海未知的奧妙")
     st.subheader("探索黑暗深淵的神秘生物")
     
     # 🌍 10大全球深海區域 - 頂級磨砂玻璃點擊式輪播組件
@@ -821,7 +821,7 @@ elif page == "📧 聯絡我們":
                 st.warning("⚠️ 請完整填寫姓名、電子郵件與訊息內容。")
 
 elif page == "ℹ️ 關於我們":
-    st.title("ℹ️ 關於深海奇蹟")
+    st.title("ℹ️ 關於深海未知的奧妙")
     st.write("本計畫旨在透過現代 Web 技術，向大眾普及極限環境下的深海生態知識。")
     st.info("🛠️ **技術堆疊**：Python 3.10+ / Streamlit / SQLite3")
 
@@ -829,6 +829,6 @@ elif page == "ℹ️ 關於我們":
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: #88aadd; padding: 20px;'>
-    <p>🌊 深海奇蹟 © 2026 | 守護海洋 從認識開始</p>
+    <p>🌊 深海未知的奧妙 © 2026 | 守護海洋 從認識開始</p>
 </div>
 """, unsafe_allow_html=True)
