@@ -269,7 +269,7 @@ def update_fish(fish_id, name, en, depth, desc):
     conn.close()
 
 # ==================== 側邊導航 ====================
-page = st.sidebar.selectbox("🌊 選擇頁面", ["🏠 首頁", "🐟 魚類圖鑑", "📸 照片上傳", "📧 聯絡我們", "ℹ️ 關於我們"], key="nav_page")
+page = st.sidebar.selectbox("🌊 選擇頁面", ["🏠 首頁", "🐟 魚類圖鑑", "📸 相關資料上傳", "📧 聯絡我們", "ℹ️ 關於我們"], key="nav_page")
 st.sidebar.markdown("---")
 st.sidebar.info("🐋 一起守護深海生態！")
 
