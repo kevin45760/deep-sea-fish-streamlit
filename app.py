@@ -854,14 +854,21 @@ elif page == "ℹ️ 關於我們":
         -webkit-backdrop-filter: blur(10px);
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
     ">
-        <img src="https://ibb.co/v6WzbBmQ" style="
+        <div style="
             width: 60px; 
             height: 60px; 
+            background: linear-gradient(45deg, #00e5ff, #64ffda); 
             border-radius: 50%; 
-            object-fit: cover;
-            border: 2px solid #00e5ff;
-            box-shadow: 0 0 15px rgba(0, 229, 255, 0.5);
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            font-size: 24px;
+            color: #0a192f;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
         ">
+            KC
+        </div>
             <div>
                 <h3 style="margin: 0; color: #ffffff; font-size: 22px; font-family: sans-serif;">Kevin Chen</h3>
                 <p style="margin: 5px 0 0 0; color: #00e5ff; font-size: 14px; font-weight: 500; letter-spacing: 0.5px;">
