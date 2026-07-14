@@ -12,73 +12,100 @@ st.set_page_config(page_title="深海奇蹟", page_icon="🌊", layout="wide")
 # 注入自訂 CSS，打造深海科技感視覺
 st.markdown("""
 <style>
-    /* 🟢 修正 1：修改現代 Streamlit 全域背景顏色 */
     [data-testid="stAppViewContainer"] { 
-        background: #0a1f3d !important; 
+        background: radial-gradient(circle at 50% 40%, #0d1e36 0%, #050b14 100%) !important; 
     }
 
-    /* 🟢 修正 2：將按鈕樣式加上 !important 防止被官方主題覆蓋 */
-    .stButton>button {
-        background-color: #1e3a5f !important;
-        color: #00f5ff !important;
-        border-radius: 8px !important;
-        border: 1px solid #00f5ff !important;
-        transition: all 0.3s !important;
-    }
-    .stButton>button:hover {
-        background-color: #00f5ff !important;
-        color: #0a1f3d !important;
-        box-shadow: 0 0 10px #00f5ff !important;
-    }
-
-    /* 🟢 修正 3：將原本的 .fish-card 改綁在 st.container(border=True) 的原生容器上 */
     div[data-testid="stVerticalBlockBorder"] {
-        background: rgba(255, 255, 255, 0.03) !important;
-        backdrop-filter: blur(12px) !important;
-        -webkit-backdrop-filter: blur(12px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        border-radius: 16px !important;
-        padding: 20px !important;
-        margin-bottom: 20px !important;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
-        transition: all 0.3s ease-in-out !important;
-    }
-    div[data-testid="stVerticalBlockBorder"]:hover {
-        transform: translateY(-3px) !important;
-        background: rgba(255, 255, 255, 0.06) !important;
-        border-color: rgba(0, 242, 254, 0.3) !important;
-        box-shadow: 0 12px 40px 0 rgba(0, 242, 254, 0.15) !important;
+        background: linear-gradient(135deg, rgba(22, 38, 64, 0.7) 0%, rgba(10, 18, 30, 0.85) 100%) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.06) !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.18) !important; 
+        border-radius: 20px !important;
+        padding: 24px !important;
+        margin-bottom: 25px !important;
+        box-shadow: 
+            0 20px 50px rgba(0, 0, 0, 0.55), 
+            inset 0 1px 1px rgba(255, 255, 255, 0.15) !important;
+        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
     }
 
-    /* 內部的文字 HTML 樣式保留，因為這是你自訂的 class，運作完全沒問題 */
-    .fish-title {
-        color: #00f2fe; 
-        font-size: 22px;
-        font-weight: 700;
-        margin-bottom: 2px;
+    div[data-testid="stVerticalBlockBorder"]:hover {
+        transform: translateY(-6px) scale(1.005) !important;
+        background: linear-gradient(135deg, rgba(28, 48, 80, 0.8) 0%, rgba(14, 24, 40, 0.9) 100%) !important;
+        border-color: rgba(0, 229, 255, 0.35) !important;
+        border-top-color: rgba(0, 229, 255, 0.6) !important;
+        box-shadow: 
+            0 30px 60px rgba(0, 229, 255, 0.12), 
+            0 12px 25px rgba(0, 0, 0, 0.6),
+            inset 0 1px 1px rgba(255, 255, 255, 0.25) !important;
     }
+
+    .fish-title {
+        background: linear-gradient(90deg, #00e5ff 0%, #7c4dff 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-size: 24px;
+        font-weight: 800;
+        margin-bottom: 3px;
+        filter: drop-shadow(0 2px 8px rgba(0, 229, 255, 0.2));
+    }
+
     .fish-en {
-        color: #8a9ba8;
+        color: #708090;
         font-size: 13px;
         font-style: italic;
         margin-bottom: 12px;
+        letter-spacing: 0.5px;
     }
+
     .fish-meta {
-        background: rgba(79, 172, 254, 0.1);
-        color: #4facfe;
-        padding: 3px 8px;
-        border-radius: 6px;
+        background: rgba(0, 229, 255, 0.08);
+        color: #00e5ff;
+        border: 1px solid rgba(0, 229, 255, 0.2);
+        padding: 4px 10px;
+        border-radius: 8px;
         font-size: 12px;
         font-weight: 600;
         display: inline-block;
-        margin-bottom: 12px;
-    }
-    .fish-desc {
-        color: #e1e8ed; 
-        line-height: 1.6; 
-        font-size: 14px; 
-        margin-top: 5px;
         margin-bottom: 15px;
+    }
+
+    .fish-desc {
+        color: #d1dbe5; 
+        line-height: 1.7; 
+        font-size: 14.5px; 
+        margin-top: 5px;
+        margin-bottom: 20px;
+    }
+
+    .stButton>button {
+        background: linear-gradient(135deg, #192d47 0%, #0d1826 100%) !important;
+        color: #8be9fd !important;
+        border-radius: 12px !important;
+        border: 1px solid rgba(139, 233, 253, 0.25) !important;
+        border-top: 1px solid rgba(139, 233, 253, 0.5) !important;
+        font-weight: 600 !important;
+        box-shadow: 
+            0 4px 10px rgba(0, 0, 0, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+        transition: all 0.2s ease !important;
+    }
+
+    .stButton>button:hover {
+        background: linear-gradient(135deg, #00e5ff 0%, #00aaff 100%) !important;
+        color: #050b14 !important;
+        border-color: #00e5ff !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 
+            0 8px 20px rgba(0, 229, 255, 0.35),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+    }
+
+    .stButton>button:active {
+        transform: translateY(1px) !important;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !important;
     }
 </style>
 """, unsafe_allow_html=True)
