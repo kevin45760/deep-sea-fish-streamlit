@@ -5,6 +5,7 @@ from datetime import datetime
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import re
 
 # 1. 網頁基本設定
 st.set_page_config(page_title="深海奇蹟", page_icon="🌊", layout="wide")
@@ -155,6 +156,18 @@ def add_like(fish_id):
     conn.commit()
     conn.close()
 
+def parse_depth_range(depth_str):
+    """將資料庫的深度文字（如 '200m - 1000m' 或 '4000m+'）轉換成 (min, max) 數值"""
+    # 提取字串中所有的數字
+    numbers = [int(n) for n in re.findall(r'\d+', str(depth_str))]
+    if not numbers:
+        return 0, 10000  # 若無數字，預設全範圍
+    if len(numbers) == 1:
+        # 例如 "4000m+" -> (4000, 10000)
+        return numbers[0], 10000
+    # 例如 "200m - 1000m" -> (200, 1000)
+    return min(numbers), max(numbers)
+
 # 3. 安全的郵件寄送功能（改自 Streamlit Secrets）
 def send_email(user_name, user_email, subject, message):
     try:
@@ -224,39 +237,72 @@ if page == "🏠 首頁":
     with col2: st.metric("最深紀錄", "4,000 米")
     with col3: st.metric("探索者生態圈", "歡迎你的加入")
 
+# --- 側邊欄：潛水艇下潛儀表板 ---
+st.sidebar.markdown("### 🎛️ 潛水艇控制台")
+
+# 雙向拉桿，讓使用者選擇想要探索的深度範圍 (預設 0 ~ 10000m)
+depth_range = st.sidebar.slider(
+    "⚓ 調整下潛深度 (公尺)",
+    min_value=0,
+    max_value=10000,
+    value=(0, 10000),
+    step=100
+)
+
+min_selected, max_selected = depth_range
+
+# 根據拉桿數值，動態判定並顯示目前所處的「深海生態帶」
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 📡 深度探測儀")
+if max_selected <= 200:
+    st.sidebar.error("☀️ **陽光帶 (Epipelagic)**\n\n海洋最上層，充滿陽光與生命。")
+elif min_selected >= 200 and max_selected <= 1000:
+    st.sidebar.warning("🌗 **暮色帶 (Mesopelagic)**\n\n微光粼粼，許多生物開始具備發光器。")
+elif min_selected >= 1000 and max_selected <= 4000:
+    st.sidebar.info("🌑 **半深海帶 (Bathypelagic)**\n\n完全黑暗！這裡的水壓極大，溫度極低。")
+elif min_selected >= 4000:
+    st.sidebar.success("💀 **深海帶 (Abyssopelagic)**\n\n接近無底深淵，生存著最奇異、最危險的巨獸。")
+else:
+    st.sidebar.write("🛸 **跨區域探索中...**")
+
 elif page == "🐟 魚類圖鑑":
     st.title("🐟 深海魚類圖鑑")
     search = st.text_input("🔍 搜尋魚種 (請輸入中文或英文名稱)...", "").lower()
     
     for f in all_fish_data:
         f_id, f_name, f_en, f_depth, f_desc, f_img, f_likes, _ = f
-        if search in f_name.lower() or search in f_en.lower():
-            # 使用自訂的 CSS 容器包裝
-            st.markdown(f'<div class="fish-card">', unsafe_allow_html=True)
-            col1, col2 = st.columns([1, 2])
-            with col1:
-                st.image(f_img, use_column_width=True)
-            with col2:
-                # 🟢 調整部分：替換為精緻的 HTML 樣式標題與標籤，其餘邏輯不變
-                st.markdown(f"""
-                    <div class="fish-title">🐟 {f_name}</div>
-                    <div class="fish-en">{f_en}</div>
-                    <div class="fish-meta">📍 棲息深度：{f_depth}</div>
-                    <p class="fish-desc">{f_desc}</p>
-                """, unsafe_allow_html=True)
-                
-                # 原本的互動按鈕，完整保留！
-                col_a, col_b = st.columns(2)
-                with col_a:
-                    if st.button(f"❤️ 喜歡 ({f_likes})", key=f"like_{f_id}"):
-                        like_fish(f_id)
-                        st.success("已為牠集氣！")
-                        st.rerun()
-                with col_b:
-                    if st.button("🔗 分享專屬連結", key=f"share_{f_id}"):
-                        st.code(f"https://share.streamlit.io/your-username/repo-name/~/fish_id={f_id}", language=None)
-                        
-                st.markdown('</div>', unsafe_allow_html=True)
+        
+        # 解析該魚類的深度區間
+        fish_min, fish_max = parse_depth_range(f_depth)
+        
+        # 判斷式：名字/英文符合，且「魚類深度區間」與「使用者拉桿區間」有重疊
+        name_match = search in f_name.lower() or search in f_en.lower()
+        depth_match = (fish_min <= max_selected) and (fish_max >= min_selected)
+        
+        if name_match and depth_match:
+            # 🟢 接下來的 st.container 與卡片渲染代碼完全不變，維持你原本寫好的漂亮 UI 即可！
+            with st.container(border=True):
+                col1, col2 = st.columns([1, 2])
+                with col1:
+                    st.image(f_img, use_container_width=True)
+                with col2:
+                    st.markdown(f"""
+                        <div class="fish-title">🐟 {f_name}</div>
+                        <div class="fish-en">{f_en}</div>
+                        <div class="fish-meta">📍 棲息深度：{f_depth}</div>
+                        <p class="fish-desc">{f_desc}</p>
+                    """, unsafe_allow_html=True)
+                    
+                    col_a, col_b = st.columns(2)
+                    with col_a:
+                        if st.button(f"❤️ 喜歡 ({f_likes})", key=f"like_{f_id}"):
+                            like_fish(f_id)
+                            st.success("已為牠集氣！")
+                            st.rerun()
+                    with col_b:
+                        if st.button("🔗 分享專屬連結", key=f"share_{f_id}"):
+                            st.code(f"https://share.streamlit.io/your-username/repo-name/~/fish_id={f_id}", language=None)=None)
+                st.markdown('</div>', unsafe_allow_html=True)   
 
 elif page == "📸 照片上傳":
     st.title("📸 上傳你的深海魚發現")
