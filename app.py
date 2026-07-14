@@ -30,6 +30,43 @@ if "nav_page" not in st.session_state:
 # 注入自訂 CSS，打造深海科技感視覺
 st.markdown("""
 <style>
+    /* 🔍 打造 Google 級別的膠囊深海搜尋框 */
+    div[data-testid="stTextInputRootElement"] {
+        border-radius: 30px !important; /* 讓兩端變成完美的圓弧膠囊狀 */
+        background: rgba(255, 255, 255, 0.04) !important; /* 輕微的磨砂玻璃底色 */
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        padding: 4px 12px !important;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    
+    /* 滑鼠懸停（Hover）時的微光外框 */
+    div[data-testid="stTextInputRootElement"]:hover {
+        background: rgba(255, 255, 255, 0.07) !important;
+        border-color: rgba(0, 229, 255, 0.3) !important;
+        box-shadow: 0 8px 32px 0 rgba(0, 229, 255, 0.1) !important;
+    }
+            
+    /* 點擊輸入（Focus）時的科技感霓虹藍發光 */
+    div[data-testid="stTextInputRootElement"]:focus-within {
+        background: rgba(13, 30, 54, 0.9) !important;
+        border-color: #00e5ff !important;
+        box-shadow: 
+            0 0 0 3px rgba(0, 229, 255, 0.25), 
+            0 12px 30px rgba(0, 0, 0, 0.5) !important;
+    }
+
+    /* 在輸入框左側，純 CSS 內嵌 SVG 放大鏡圖示 */
+    div[data-testid="stTextInputRootElement"] input {
+        padding-left: 38px !important; /* 留出空間給左邊的放大鏡 */
+        color: #ffffff !important;
+        /* 以下用 Data URI 塞入亮青色的 SVG 放大鏡 */
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%2300e5ff" class="bi bi-search" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>') !important;
+        background-repeat: no-repeat !important;
+        background-position: 10px center !important; /* 控制圖示水平垂直居中 */
+    }        
+            
     [data-testid="stAppViewContainer"] { 
         background: radial-gradient(circle at 50% 40%, #0d1e36 0%, #050b14 100%) !important; 
     }
@@ -361,7 +398,7 @@ elif page == "🐟 魚類圖鑑":
     st.title("🐟 深海魚類圖鑑")
     # 🟢 新增修改：若檢查到上傳成功旗標，就在圖鑑最上方顯示成功字樣框做檢視
     if st.session_state.get("upload_success_alert"):
-        st.success("🎉 新物種登錄成功！已同步加入下方深海圖鑑供您檢視。")
+        st.success("🎉 新物種登錄成功！已同步加入下方深海圖鑑供您檢視!")
         del st.session_state.upload_success_alert  # 顯示一次後清除旗標，防止重整時重複跳出
     search = st.text_input("搜尋魚種", placeholder="輸入中文或英文名稱探索深海魚種...", label_visibility="collapsed").lower()
     
