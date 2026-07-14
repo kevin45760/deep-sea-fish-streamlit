@@ -817,7 +817,6 @@ elif page == "📧 聯絡我們":
             if name and email and message:
                 if send_email(name, email, subject, message):
                     st.success("✅ 訊息已成功送出！我們將儘速與您聯繫。")
-                    st.balloons()
             else:
                 st.warning("⚠️ 請完整填寫姓名、電子郵件與訊息內容。")
 
