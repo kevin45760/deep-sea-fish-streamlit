@@ -855,7 +855,7 @@ elif page == "ℹ️ 關於我們":
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
     ">
         <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
-            <img src="你的頭像圖片網址" style="
+            <img src="https://ibb.co/v6WzbBmQ" style="
                 width: 60px; 
                 height: 60px; 
                 border-radius: 50%; 
