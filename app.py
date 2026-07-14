@@ -227,16 +227,6 @@ st.sidebar.info("🐋 一起守護深海生態！")
 # ==================== 頁面邏輯 ====================
 all_fish_data = load_fish()
 
-if page == "🏠 首頁":
-    st.title("🌊 深海奇蹟")
-    st.subheader("探索黑暗深淵的神秘生物")
-    st.image("https://picsum.photos/id/1015/1200/500", use_column_width=True)
-    
-    col1, col2, col3 = st.columns(3)
-    with col1: st.metric("已收錄魚種", len(all_fish_data))
-    with col2: st.metric("最深紀錄", "4,000 米")
-    with col3: st.metric("探索者生態圈", "歡迎你的加入")
-
 # --- 側邊欄：潛水艇下潛儀表板 ---
 st.sidebar.markdown("### 🎛️ 潛水艇控制台")
 
@@ -264,6 +254,17 @@ elif min_selected >= 4000:
     st.sidebar.success("💀 **深海帶 (Abyssopelagic)**\n\n接近無底深淵，生存著最奇異、最危險的巨獸。")
 else:
     st.sidebar.write("🛸 **跨區域探索中...**")
+
+
+if page == "🏠 首頁":
+    st.title("🌊 深海奇蹟")
+    st.subheader("探索黑暗深淵的神秘生物")
+    st.image("https://picsum.photos/id/1015/1200/500", use_column_width=True)
+    
+    col1, col2, col3 = st.columns(3)
+    with col1: st.metric("已收錄魚種", len(all_fish_data))
+    with col2: st.metric("最深紀錄", "4,000 米")
+    with col3: st.metric("探索者生態圈", "歡迎你的加入")
 
 elif page == "🐟 魚類圖鑑":
     st.title("🐟 深海魚類圖鑑")
