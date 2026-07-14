@@ -826,9 +826,11 @@ elif page == "ℹ️ 關於我們":
     st.info("🛠️ **技術堆疊**：Python 3.10+ / Streamlit / SQLite3")
 
 # ==================== 頁尾 ====================
-st.markdown("---")
+st.markdown("<br><br><br>", unsafe_allow_html=True) # 留出推擠空間
 st.markdown("""
-<div style='text-align: center; color: #88aadd; padding: 20px;'>
-    <p>🌊 深海未知的奧妙 © 2026 | 守護海洋 從認識開始</p>
-</div>
+    <div style="text-align: center; padding: 20px 0; border-top: 1px solid rgba(255, 255, 255, 0.05);">
+        <p style="color: #6a7b95; font-size: 13px; letter-spacing: 1px;">
+            © 2026 Designed & Built by <span style="color: #00e5ff; font-weight: bold;">Kevin Chen</span>. All Rights Reserved.
+        </p>
+    </div>
 """, unsafe_allow_html=True)
