@@ -202,34 +202,34 @@ elif page == "🐟 魚類圖鑑":
     search = st.text_input("🔍 搜尋魚種 (請輸入中文或英文名稱)...", "").lower()
     
     for f in all_fish_data:
-    f_id, f_name, f_en, f_depth, f_desc, f_img, f_likes, _ = f
-    if search in f_name.lower() or search in f_en.lower():
-        # 使用自訂的 CSS 容器包裝
-        st.markdown(f'<div class="fish-card">', unsafe_allow_html=True)
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            st.image(f_img, use_column_width=True)
-        with col2:
-            # 🟢 調整部分：替換為精緻的 HTML 樣式標題與標籤，其餘邏輯不變
-            st.markdown(f"""
-                <div class="fish-title">🐟 {f_name}</div>
-                <div class="fish-en">{f_en}</div>
-                <div class="fish-meta">📍 棲息深度：{f_depth}</div>
-                <p class="fish-desc">{f_desc}</p>
-            """, unsafe_allow_html=True)
-            
-            # 原本的互動按鈕，完整保留！
-            col_a, col_b = st.columns(2)
-            with col_a:
-                if st.button(f"❤️ 喜歡 ({f_likes})", key=f"like_{f_id}"):
-                    like_fish(f_id)
-                    st.success("已為牠集氣！")
-                    st.rerun()
-            with col_b:
-                if st.button("🔗 分享專屬連結", key=f"share_{f_id}"):
-                    st.code(f"https://share.streamlit.io/your-username/repo-name/~/fish_id={f_id}", language=None)
-                    
-        st.markdown('</div>', unsafe_allow_html=True)
+        f_id, f_name, f_en, f_depth, f_desc, f_img, f_likes, _ = f
+        if search in f_name.lower() or search in f_en.lower():
+            # 使用自訂的 CSS 容器包裝
+            st.markdown(f'<div class="fish-card">', unsafe_allow_html=True)
+            col1, col2 = st.columns([1, 2])
+            with col1:
+                st.image(f_img, use_column_width=True)
+            with col2:
+                # 🟢 調整部分：替換為精緻的 HTML 樣式標題與標籤，其餘邏輯不變
+                st.markdown(f"""
+                    <div class="fish-title">🐟 {f_name}</div>
+                    <div class="fish-en">{f_en}</div>
+                    <div class="fish-meta">📍 棲息深度：{f_depth}</div>
+                    <p class="fish-desc">{f_desc}</p>
+                """, unsafe_allow_html=True)
+                
+                # 原本的互動按鈕，完整保留！
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    if st.button(f"❤️ 喜歡 ({f_likes})", key=f"like_{f_id}"):
+                        like_fish(f_id)
+                        st.success("已為牠集氣！")
+                        st.rerun()
+                with col_b:
+                    if st.button("🔗 分享專屬連結", key=f"share_{f_id}"):
+                        st.code(f"https://share.streamlit.io/your-username/repo-name/~/fish_id={f_id}", language=None)
+                        
+                st.markdown('</div>', unsafe_allow_html=True)
 
 elif page == "📸 照片上傳":
     st.title("📸 上傳你的深海魚發現")
