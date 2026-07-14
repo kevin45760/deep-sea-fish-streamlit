@@ -1,66 +1,11 @@
 import streamlit as st
 import os
+from datetime import datetime
 import json
 
 st.set_page_config(page_title="深海奇蹟", page_icon="🌊", layout="wide")
 
-# 明亮版 CSS
-st.markdown("""
-<style>
-    /* 主體暗色主題 */
-    .main {
-        background: linear-gradient(180deg, #0a1625, #0f2a4a);
-        color: #e0f0ff;
-    }
-    
-    h1, h2, h3 {
-        color: #67e8f9 !important;
-        text-shadow: 0 0 15px rgba(103, 232, 249, 0.5);
-    }
-    
-    p, li, label, .stMarkdown, .stCaption {
-        color: #b0c8e0 !important;
-        line-height: 1.7;
-    }
-    
-    /* 魚類卡片 - 高級暗色 */
-    .fish-card {
-        background: rgba(30, 58, 95, 0.85);
-        border: 1px solid rgba(103, 232, 249, 0.3);
-        border-radius: 20px;
-        padding: 25px;
-        backdrop-filter: blur(10px);
-        transition: all 0.4s ease;
-    }
-    .fish-card:hover {
-        background: rgba(45, 75, 120, 0.95);
-        transform: translateY(-12px);
-        border-color: #67e8f9;
-        box-shadow: 0 20px 40px rgba(103, 232, 249, 0.15);
-    }
-    
-    /* 輸入框 */
-    .stTextInput input, .stTextArea textarea {
-        background-color: #1a2f4a !important;
-        color: #e0f0ff !important;
-        border: 1px solid #67e8f9 !important;
-    }
-    
-    /* 按鈕 */
-    button {
-        background: linear-gradient(90deg, #00b8d4, #0288d1) !important;
-        color: white !important;
-        font-weight: 600;
-        border: none;
-    }
-    
-    .stSidebar {
-        background: #0a1625;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# 資料處理函數（保持不變）
+# 建立資料夾與載入資料
 if not os.path.exists("uploads"):
     os.makedirs("uploads")
 
@@ -77,70 +22,90 @@ def save_data(data):
 
 fish_data = load_data()
 
-# 側邊欄
+# ==================== 側邊導航 ====================
 page = st.sidebar.selectbox("🌊 選擇頁面", 
     ["🏠 首頁", "🐟 魚類圖鑑", "📸 照片上傳", "ℹ️ 關於我們"])
+
+st.sidebar.markdown("---")
+st.sidebar.info("深海探索者們，一起守護海洋！")
 
 # ==================== 首頁 ====================
 if page == "🏠 首頁":
     st.title("🌊 深海奇蹟")
-    st.subheader("探索神秘的深海世界")
-    st.image("https://picsum.photos/id/1015/1400/500", use_column_width=True)
-
+    st.subheader("探索黑暗深淵的神秘生物")
+    
+    st.image("https://picsum.photos/id/1015/1200/500", use_column_width=True)
+    
     col1, col2, col3 = st.columns(3)
-    with col1: st.metric("已收錄魚種", len(fish_data) + 8)
-    with col2: st.metric("最深紀錄", "4000 米")
-    with col3: st.metric("探索者", "你也是！")
+    with col1:
+        st.metric("已收錄魚種", len(fish_data) + 8)
+    with col2:
+        st.metric("最深紀錄", "4000 米")
+    with col3:
+        st.metric("探索者", "你也是！")
 
 # ==================== 魚類圖鑑 ====================
 elif page == "🐟 魚類圖鑑":
     st.title("🐟 深海魚類圖鑑")
+    
     search = st.text_input("🔍 搜尋魚種名稱")
     
+    # 預設魚類
     default_fish = [
-        {"name": "燈籠魚", "en": "Anglerfish", "depth": "200-2000米", "desc": "頭頂發光釣竿，用來吸引獵物。", "img": "https://picsum.photos/id/201/600/350"},
-        {"name": "蝰魚", "en": "Viperfish", "depth": "500-4000米", "desc": "擁有超長尖牙，能吞下比自己更大的生物。", "img": "https://picsum.photos/id/251/600/350"},
-        {"name": "Goblin Shark", "en": "Goblin Shark", "depth": "200-1300米", "desc": "可伸出巨大下顎的活化石鯊魚。", "img": "https://picsum.photos/id/866/600/350"},
-        {"name": "鮟鱇魚", "en": "Blobfish", "depth": "600-1200米", "desc": "在深海高壓下像果凍，外表看起來很悲傷。", "img": "https://picsum.photos/id/1015/600/350"},
+        {"name": "燈籠魚", "en": "Anglerfish", "depth": "200-2000米", "desc": "頭頂有發光釣竿，用來吸引獵物。雌魚遠大於雄魚。", "img": "https://picsum.photos/id/201/400/250"},
+        {"name": "蝰魚", "en": "Viperfish", "depth": "500-4000米", "desc": "擁有超長尖牙，能吞下比自己更大的獵物。", "img": "https://picsum.photos/id/251/400/250"},
+        {"name": "Goblin Shark", "en": "Goblin Shark", "depth": "200-1300米", "desc": "活化石級別，可伸出巨大下顎捕食。", "img": "https://picsum.photos/id/866/400/250"},
+        {"name": "鮟鱇魚", "en": "Blobfish", "depth": "600-1200米", "desc": "在深海高壓下像果凍，外表看起來很悲傷。", "img": "https://picsum.photos/id/1015/400/250"},
     ]
     
     all_fish = default_fish + fish_data
-    cols = st.columns(2)
     
-    for i, fish in enumerate(all_fish):
-        if not search or search.lower() in fish["name"].lower():
-            with cols[i % 2]:
-                st.markdown('<div class="fish-card">', unsafe_allow_html=True)
-                st.image(fish["img"], use_column_width=True)
-                st.subheader(fish["name"])
-                st.caption(f"{fish['en']} • {fish['depth']}")
-                st.write(fish["desc"])
-                st.markdown('</div>', unsafe_allow_html=True)
+    for fish in all_fish:
+        if search.lower() in fish["name"].lower() or search.lower() in fish.get("en","").lower():
+            with st.container(border=True):
+                col1, col2 = st.columns([1, 2])
+                with col1:
+                    st.image(fish["img"], use_column_width=True)
+                with col2:
+                    st.subheader(f"{fish['name']} ({fish.get('en', '')})")
+                    st.caption(f"深度：{fish['depth']}")
+                    st.write(fish["desc"])
 
 # ==================== 照片上傳 ====================
 elif page == "📸 照片上傳":
-    st.title("📸 上傳你的深海發現")
-    name = st.text_input("魚類名稱")
-    desc = st.text_area("照片描述")
-    uploaded_file = st.file_uploader("選擇照片", type=["jpg","png","jpeg"])
+    st.title("📸 上傳你的深海魚照片")
     
-    if st.button("上傳照片", type="primary"):
+    name = st.text_input("魚類名稱")
+    desc = st.text_area("簡單描述")
+    uploaded_file = st.file_uploader("選擇照片", type=["jpg", "png", "jpeg"])
+    
+    if st.button("🚀 上傳照片"):
         if uploaded_file and name:
             file_path = os.path.join("uploads", uploaded_file.name)
             with open(file_path, "wb") as f:
                 f.write(uploaded_file.getbuffer())
             
-            new_fish = {"name": name, "en": "", "depth": "社群分享", "desc": desc or "使用者上傳", "img": file_path}
+            new_fish = {
+                "name": name,
+                "en": "",
+                "depth": "未知",
+                "desc": desc or "社群分享照片",
+                "img": file_path
+            }
             fish_data.append(new_fish)
             save_data(fish_data)
-            st.success("✅ 上傳成功！感謝你的貢獻")
+            
+            st.success(f"✅ {name} 的照片上傳成功！")
             st.balloons()
         else:
             st.error("請填寫名稱並上傳照片")
 
-# 關於我們
+# ==================== 關於我們 ====================
 elif page == "ℹ️ 關於我們":
-    st.title("關於我們")
-    st.write("這個網站致力於推廣深海魚類知識，希望大家一起愛護海洋生態。")
+    st.title("關於深海奇蹟")
+    st.write("這個網站使用 Python + Streamlit 開發")
+    st.write("目的是讓更多人認識深海生態，珍惜我們的海洋。")
+    st.info("💡 你也可以上傳照片一起豐富這個圖鑑！")
 
-st.caption("🌊 深海奇蹟 - 守護海洋從認識開始")
+# 美化效果
+st.caption("🌊 深海探索 永不止步")
