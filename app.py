@@ -113,7 +113,7 @@ st.markdown("""
 
 # 2. 資料庫初始化與資料播種 (Seeding)
 def init_db():
-    conn = sqlite3.connect("fish.db")
+    conn = sqlite3.connect("fish_v3.db")
     c = conn.cursor()
     # 加上這行：每次初始化時若欄位不對，就直接砍掉重建
     c.execute("DROP TABLE IF EXISTS fish") 
@@ -163,7 +163,7 @@ if not os.path.exists("uploads"):
 
 # 2. 新增按讚資料庫寫入邏輯
 def add_like(fish_id):
-    conn = sqlite3.connect("fish.db")
+    conn = sqlite3.connect("fish_v3.db")
     c = conn.cursor()
     c.execute("UPDATE fish SET likes = likes + 1 WHERE id = ?", (fish_id,))
     conn.commit()
