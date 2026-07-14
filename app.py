@@ -415,8 +415,283 @@ if "success_fish_id" in st.session_state:
 if page == "🏠 首頁":
     st.title("🌊 深海奇蹟")
     st.subheader("探索黑暗深淵的神秘生物")
-    st.image("https://picsum.photos/id/1015/1200/500", use_column_width=True)
     
+    # 🌍 10大全球深海區域 - 頂級磨砂玻璃點擊式輪播組件
+    carousel_html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+            body { margin: 0; padding: 0; background: transparent; font-family: system-ui, -apple-system, sans-serif; overflow: hidden; }
+            
+            /* 輪播主外框 */
+            .slider-container {
+                position: relative;
+                width: 100%;
+                height: 380px;
+                overflow: hidden;
+                border-radius: 20px;
+                box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+            }
+            
+            /* 幻燈片主體 */
+            .slide {
+                display: none;
+                position: relative;
+                width: 100%;
+                height: 100%;
+                animation: fade 0.6s ease-in-out;
+            }
+            .slide img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+            .slide-active { display: block; }
+            
+            /* 🎯 圖片左/右側大面積隱形/微光點擊區域 */
+            .nav-zone {
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                width: 18%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                color: rgba(255, 255, 255, 0.15);
+                font-size: 36px;
+                font-weight: bold;
+                transition: all 0.3s ease;
+                user-select: none;
+                z-index: 10;
+            }
+            .nav-left { 
+                left: 0; 
+                background: linear-gradient(to right, rgba(5, 11, 20, 0.45), transparent); 
+                padding-right: 20px;
+            }
+            .nav-right { 
+                right: 0; 
+                background: linear-gradient(to left, rgba(5, 11, 20, 0.45), transparent); 
+                padding-left: 20px;
+            }
+            
+            /* 滑鼠懸停兩側時，浮現亮青色霓虹發光箭頭 */
+            .nav-zone:hover {
+                color: #00e5ff;
+                text-shadow: 0 0 12px rgba(0, 229, 255, 0.8);
+                font-size: 44px;
+            }
+            .nav-left:hover { background: linear-gradient(to right, rgba(0, 229, 255, 0.12), transparent); }
+            .nav-right:hover { background: linear-gradient(to left, rgba(0, 229, 255, 0.12), transparent); }
+            
+            /* 🔮 下方深海磨砂玻璃文字面板 */
+            .caption-panel {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: linear-gradient(to top, rgba(5, 11, 20, 0.95) 0%, rgba(13, 30, 54, 0.5) 100%);
+                backdrop-filter: blur(15px);
+                -webkit-backdrop-filter: blur(15px);
+                padding: 18px 40px;
+                color: #ffffff;
+                z-index: 5;
+                border-top: 1px solid rgba(255, 255, 255, 0.05);
+            }
+            .caption-title {
+                font-size: 20px;
+                font-weight: 800;
+                color: #00e5ff;
+                margin-bottom: 5px;
+                filter: drop-shadow(0 2px 6px rgba(0, 229, 255, 0.3));
+            }
+            .caption-desc {
+                font-size: 13.5px;
+                color: #d1dbe5;
+                line-height: 1.5;
+                max-width: 80%;
+            }
+            
+            /* 分頁進度點 */
+            .dots-container {
+                position: absolute;
+                bottom: 22px;
+                right: 40px;
+                z-index: 6;
+            }
+            .dot {
+                width: 6px;
+                height: 6px;
+                margin: 0 4px;
+                background-color: rgba(255, 255, 255, 0.25);
+                border-radius: 50%;
+                display: inline-block;
+                transition: all 0.4s ease;
+                cursor: pointer;
+            }
+            .dot-active { 
+                background-color: #00e5ff; 
+                width: 16px; /* 當前頁面拉長，增加現代高級感 */
+                border-radius: 3px;
+                box-shadow: 0 0 8px #00e5ff; 
+            }
+            
+            @keyframes fade {
+                from { opacity: 0.6; transform: scale(1.01); }
+                to { opacity: 1; transform: scale(1); }
+            }
+        </style>
+    </head>
+    <body>
+
+        <div class="slider-container">
+            <!-- 點擊左側區域 -->
+            <div class="nav-zone nav-left" onclick="moveSlide(-1)">&#10094;</div>
+            <!-- 點擊右側區域 -->
+            <div class="nav-zone nav-right" onclick="moveSlide(1)">&#10095;</div>
+
+            <!-- 10個世界經典深海區域幻燈片 -->
+            <div class="slide slide-active">
+                <img src="https://images.unsplash.com/photo-1551244072-5d12893278ab?q=80&w=1200" alt="馬里亞納海溝">
+                <div class="caption-panel">
+                    <div class="caption-title">1. 馬里亞納海溝 (Mariana Trench) · 太平洋</div>
+                    <div class="caption-desc">地球已知最深的海溝，其「斐查茲海淵」深達近 11,000 米，是一片完全黑暗、承受千倍水壓的超深淵荒漠。</div>
+                </div>
+            </div>
+
+            <div class="slide">
+                <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200" alt="湯加海溝">
+                <div class="caption-panel">
+                    <div class="caption-title">2. 湯加海溝 (Tonga Trench) · 西南太平洋</div>
+                    <div class="caption-desc">南半球最深邃的地帶，其極點「地平線海淵」深達 10,882 米，由太平洋板塊劇烈俯衝隱沒而形成。</div>
+                </div>
+            </div>
+
+            <div class="slide">
+                <img src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=1200" alt="菲律賓海溝">
+                <div class="caption-panel">
+                    <div class="caption-title">3. 菲律賓海溝 (Philippine Trench) · 西太平洋</div>
+                    <div class="caption-desc">又稱民答那峨海溝，深達 10,540 米。地處活躍板塊邊緣，是一條如深邃刀疤般縱貫菲律賓東側的海底大裂縫。</div>
+                </div>
+            </div>
+
+            <div class="slide">
+                <img src="https://images.unsplash.com/photo-1439405326854-014607f694d7?q=80&w=1200" alt="克馬德克海溝">
+                <div class="caption-panel">
+                    <div class="caption-title">4. 克馬德克海溝 (Kermadec Trench) · 南太平洋</div>
+                    <div class="caption-desc">深度達 10,047 米，與湯加海溝相連。科學家曾在此處捕捉到打破體型紀錄的超巨大深海端足類甲殼生物。</div>
+                </div>
+            </div>
+
+            <div class="slide">
+                <img src="https://images.unsplash.com/photo-1682687220063-4742bd7fd538?q=80&w=1200" alt="波多黎各海溝">
+                <div class="caption-panel">
+                    <div class="caption-title">5. 波多黎各海溝 (Puerto Rico Trench) · 大西洋</div>
+                    <div class="caption-desc">大西洋與加勒比海交界處的最深地帶（8,376 米）。此處地質結構極其複雜，是極具破壞力的海嘯海溝。</div>
+                </div>
+            </div>
+
+            <div class="slide">
+                <img src="https://images.unsplash.com/photo-1505118380757-91f5f5632de0?q=80&w=1200" alt="爪哇海溝">
+                <div class="caption-panel">
+                    <div class="caption-title">6. 爪哇海溝 (Java Trench) · 印度洋</div>
+                    <div class="caption-desc">印度洋唯一突破七千米深度的海溝（最深 7,725 米），綿延於蘇門答臘與爪哇島南側，是引發南亞海嘯的源頭。</div>
+                </div>
+            </div>
+
+            <div class="slide">
+                <img src="https://images.unsplash.com/photo-1518837695005-2083093ee35b?q=80&w=1200" alt="南桑威奇海溝">
+                <div class="caption-panel">
+                    <div class="caption-title">7. 南桑威奇海溝 (South Sandwich Trench) · 南冰洋</div>
+                    <div class="caption-desc">深達 8,266 米，地處冰天雪地的南極圈邊緣。它是地球上唯一充滿冰冷寒流隱沒、環境最惡劣的極地超深淵。</div>
+                </div>
+            </div>
+
+            <div class="slide">
+                <img src="https://images.unsplash.com/photo-1583212292454-1fe6229603b7?q=80&w=1200" alt="日本海溝">
+                <div class="caption-panel">
+                    <div class="caption-title">8. 日本海溝 (Japan Trench) · 西太平洋</div>
+                    <div class="caption-desc">位於日本列島以東，最深處達 8,412 米。這裡是太平洋板塊隱沒的核心地帶，頻繁引發大型深源地震與海嘯。</div>
+                </div>
+            </div>
+
+            <div class="slide">
+                <img src="https://images.unsplash.com/photo-1520114878144-6123749968dd?q=80&w=1200" alt="莫洛伊海淵">
+                <div class="caption-panel">
+                    <div class="caption-title">9. 莫洛伊海淵 (Molloy Deep) · 北冰洋</div>
+                    <div class="caption-desc">位於格陵蘭島海域，深達 5,550 米。雖然深度不及太平洋，但它是北極圈內最寒冷、最與世隔絕的無底巨坑。</div>
+                </div>
+            </div>
+
+            <div class="slide">
+                <img src="https://images.unsplash.com/photo-1568430462989-4b16f61d2cfc?q=80&w=1200" alt="加拉巴哥裂谷熱泉">
+                <div class="caption-panel">
+                    <div class="caption-title">10. 加拉巴哥裂谷熱泉 (Galapagos Rift) · 東太平洋</div>
+                    <div class="caption-desc">科學界首個發現深海「黑煙囪」的地方。熱泉高達數百度並夾帶硫化物，卻孕育出完全不仰賴陽光的化學合成奇特生態系。</div>
+                </div>
+            </div>
+
+            <!-- 進度點指標 -->
+            <div class="dots-container">
+                <div class="dot dot-active" onclick="jumpToSlide(0)"></div>
+                <div class="dot" onclick="jumpToSlide(1)"></div>
+                <div class="dot" onclick="jumpToSlide(2)"></div>
+                <div class="dot" onclick="jumpToSlide(3)"></div>
+                <div class="dot" onclick="jumpToSlide(4)"></div>
+                <div class="dot" onclick="jumpToSlide(5)"></div>
+                <div class="dot" onclick="jumpToSlide(6)"></div>
+                <div class="dot" onclick="jumpToSlide(7)"></div>
+                <div class="dot" onclick="jumpToSlide(8)"></div>
+                <div class="dot" onclick="jumpToSlide(9)"></div>
+            </div>
+        </div>
+
+        <script>
+            let currentIndex = 0;
+            const slides = document.querySelectorAll('.slide');
+            const dots = document.querySelectorAll('.dot');
+            let autoTimer = setInterval(() => { moveSlide(1); }, 7000); // 預設每 7 秒自動切換
+
+            function updateCarousel() {
+                slides.forEach((slide, i) => {
+                    if (i === currentIndex) {
+                        slide.classList.add('slide-active');
+                        dots[i].classList.add('dot-active');
+                    } else {
+                        slide.classList.remove('slide-active');
+                        dots[i].classList.remove('dot-active');
+                    }
+                });
+            }
+
+            function moveSlide(step) {
+                clearInterval(autoTimer); // 使用者手動點擊時，重設自動輪播倒數
+                currentIndex += step;
+                if (currentIndex >= slides.length) currentIndex = 0;
+                if (currentIndex < 0) currentIndex = slides.length - 1;
+                updateCarousel();
+                autoTimer = setInterval(() => { moveSlide(1); }, 7000);
+            }
+
+            function jumpToSlide(index) {
+                clearInterval(autoTimer);
+                currentIndex = index;
+                updateCarousel();
+                autoTimer = setInterval(() => { moveSlide(1); }, 7000);
+            }
+        </script>
+    </body>
+    </html>
+    """
+    
+    # 透過 Streamlit 的 Html 組件完美渲染，不觸發整個後端 rerun
+    st.components.v1.html(carousel_html, height=390)
+    
+    # 保持下方的 Metric 數據欄位不變
     col1, col2, col3 = st.columns(3)
     with col1: st.metric("已收錄魚種", len(all_fish_data))
     with col2: st.metric("最深紀錄", "4,000 米")
