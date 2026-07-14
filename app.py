@@ -2,6 +2,9 @@ import streamlit as st
 import os
 import sqlite3
 from datetime import datetime
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 st.set_page_config(page_title="深海奇蹟", page_icon="🌊", layout="wide")
 
@@ -19,6 +22,42 @@ init_db()
 
 if not os.path.exists("uploads"):
     os.makedirs("uploads")
+
+def send_email(user_name, user_email, subject, message):
+    try:
+        # === 請填入你的 Gmail 資訊 ===
+        sender_email = "你的gmail@gmail.com"      # ← 改成你的 Gmail
+        sender_password = "你的App密碼"           # ← 改成 Gmail App 密碼（不是一般密碼）
+        receiver_email = "你的gmail@gmail.com"    # ← 接收郵件的信箱
+        
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = receiver_email
+        msg['Subject'] = f"深海奇蹟網站留言 - {subject or '無主旨'}"
+        
+        body = f"""
+        收到新留言！
+        
+        姓名：{user_name}
+        信箱：{user_email}
+        主旨：{subject}
+        
+        訊息內容：
+        {message}
+        
+        時間：{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+        """
+        msg.attach(MIMEText(body, 'plain'))
+        
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(sender_email, sender_password)
+        server.send_message(msg)
+        server.quit()
+        return True
+    except Exception as e:
+        st.error(f"錯誤：{str(e)}")
+        return False
 
 # 資料庫函數
 def load_fish():
@@ -120,18 +159,32 @@ elif page == "📸 照片上傳":
             st.error("請填寫名稱並上傳照片")
 
 # ==================== 聯絡我們 ====================
+# ==================== 聯絡我們 ====================
 elif page == "📧 聯絡我們":
     st.title("📧 聯絡我們")
-    st.write("有任何問題、建議或想合作，歡迎留言！")
+    st.write("有問題、建議或合作意願，歡迎留言，我們會盡快回覆！")
     
     with st.form("contact_form"):
-        name = st.text_input("您的姓名")
-        email = st.text_input("電子郵件")
-        message = st.text_area("您的訊息")
-        submitted = st.form_submit_button("送出訊息")
+        col1, col2 = st.columns(2)
+        with col1:
+            name = st.text_input("您的姓名 *")
+        with col2:
+            email = st.text_input("電子郵件 *")
+        subject = st.text_input("主旨")
+        message = st.text_area("您的訊息 *", height=150)
+        
+        submitted = st.form_submit_button("📤 送出訊息")
+        
         if submitted:
-            st.success("✅ 感謝您的留言！我們會盡快回覆。")
-            # 這裡之後可以接 Email 或資料庫儲存
+            if name and email and message:
+                success = send_email(name, email, subject, message)
+                if success:
+                    st.success("✅ 訊息已成功送出！感謝您的聯絡，我們會盡快回覆。")
+                    st.balloons()
+                else:
+                    st.error("❌ 寄送失敗，請稍後再試或直接寄信給我們。")
+            else:
+                st.warning("請填寫姓名、郵件和訊息內容")
 
 # ==================== 關於我們 ====================
 elif page == "ℹ️ 關於我們":
