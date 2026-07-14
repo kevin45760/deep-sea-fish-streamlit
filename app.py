@@ -295,12 +295,31 @@ def add_fish(name, en, depth, desc, img, uploader_id):
     conn.commit()
     conn.close()
 
-def like_fish(fish_id):
+def has_user_liked(user_id, fish_id):
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
-    c.execute("UPDATE fish SET likes = likes + 1 WHERE id = ?", (fish_id,))
+    c.execute("SELECT 1 FROM likes_registry WHERE user_id = ? AND fish_id = ?", (user_id, fish_id))
+    result = c.fetchone()
+    conn.close()
+    return result is not None
+
+# 🟢 核心修改：改寫為「切換式按讚邏輯（Toggle Like）」
+def toggle_like_fish(fish_id, user_id):
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    if has_user_liked(user_id, fish_id):
+        # 如果已經按過讚 -> 收回讚（刪除紀錄、讚數 -1）
+        c.execute("DELETE FROM likes_registry WHERE user_id = ? AND fish_id = ?", (user_id, fish_id))
+        c.execute("UPDATE fish SET likes = MAX(0, likes - 1) WHERE id = ?", (fish_id,))
+        status = "removed"
+    else:
+        # 如果還沒按過讚 -> 加上讚（新增紀錄、讚數 +1）
+        c.execute("INSERT INTO likes_registry (user_id, fish_id) VALUES (?, ?)", (user_id, fish_id))
+        c.execute("UPDATE fish SET likes = likes + 1 WHERE id = ?", (fish_id,))
+        status = "added"
     conn.commit()
     conn.close()
+    return status
 
 # 🟢 新增：修改資料的資料庫更新函數
 def update_fish(fish_id, name, en, depth, desc):
@@ -429,9 +448,17 @@ elif page == "🐟 魚類圖鑑":
                     
                     col_a, col_b = st.columns(2)
                     with col_a:
-                        if st.button(f"❤️ 喜歡 ({f_likes})", key=f"like_{f_id}"):
-                            like_fish(f_id)
-                            st.success("已為牠集氣！")
+                        # 🟢 核心修改：動態偵測按讚狀態，渲染不同的按鈕外觀與觸發行為
+                        user_already_liked = has_user_liked(st.session_state.user_id, f_id)
+                        btn_label = f"❤️ 已喜歡 ({f_likes})" if user_already_liked else f"🤍 喜歡 ({f_likes})"
+                        
+                        if st.button(btn_label, key=f"like_{f_id}"):
+                            res = toggle_like_fish(f_id, st.session_state.user_id)
+                            if res == "added":
+                                st.toast("已加入你的喜歡清單！")
+                            else:
+                                st.toast("已收回讚。")
+                            time.sleep(0.3)
                             st.rerun()
                     with col_b:
                         if st.button("🔗 分享專屬連結", key=f"share_{f_id}"):
