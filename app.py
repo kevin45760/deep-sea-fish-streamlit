@@ -1093,7 +1093,7 @@ elif page == "🐟 魚類圖鑑":
     else:
         st.info("請拖曳滑桿以探索特定深度！")
 
-    st.sidebar.markdown("---")
+    st.markdown("---")
     st.title("🐟 深海魚類圖鑑")
     
     # 🟢 1. 建立雙頁籤：一個放你原本的探索圖鑑，一個放我們的數據分析儀表板
