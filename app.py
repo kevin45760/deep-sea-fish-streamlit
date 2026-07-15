@@ -416,7 +416,7 @@ audio_control_html = f"""
             btn.style.background = 'linear-gradient(135deg, #ff4b4b 0%, #ff2b2b 100%)';
             btn.style.color = '#ffffff';
             btn.style.boxShadow = '0 0 15px rgba(255, 75, 75, 0.4)';
-        } else {{
+        }} else {{
             audio.pause();
             btn.innerHTML = '▶️ 開啟深海聲納';
             btn.style.background = 'linear-gradient(135deg, #00e5ff 0%, #00aaff 100%)';
