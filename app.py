@@ -9,7 +9,7 @@ import re
 import uuid
 import time  # 🟢 引入時間模組，用來控制提示框顯示的停留時間
 import pandas as pd
-import plotly.express as p
+import plotly.express as px
 
 # 1. 網頁基本設定
 st.set_page_config(page_title="深海未知的奧妙", page_icon="🌊", layout="wide")
