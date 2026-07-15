@@ -541,129 +541,6 @@ st.sidebar.info("🐋 一起守護深海生態！")
 # ==================== 頁面邏輯 ====================
 all_fish_data = load_fish()
 
-# ==========================================
-# 1. 定義海洋分層資料與精美配色
-# ==========================================
-OCEAN_ZONES = [
-    {
-        "name": "☀️ 表層帶 (Epipelagic)",
-        "min": 0,
-        "max": 200,
-        "color": "#FFD700",  # 金黃色
-        "desc": "光線充足，是海洋生物最繁盛、光合作用活躍的區域。"
-    },
-    {
-        "name": "🌅 中層帶 / 半深海帶 (Mesopelagic)",
-        "min": 200,
-        "max": 1000,
-        "color": "#5FD5FC",  # 天藍色
-        "desc": "微弱光線的弱光帶，許多深海生物白天在此隱匿，晚上浮上表層覓食。"
-    },
-    {
-        "name": "🌌 深層帶 / 深海帶 (Bathypelagic)",
-        "min": 1000,
-        "max": 4000,
-        "color": "#4169E1",  # 皇家藍
-        "desc": "進入完全黑暗的無光帶，這裡的生物多具有發光器官，承受巨大水壓。"
-    },
-    {
-        "name": "🌋 深淵帶 (Abyssopelagic)",
-        "min": 4000,
-        "max": 6000,
-        "color": "#2121E4",  # 午夜藍
-        "desc": "接近冰點的漆黑世界，水壓極高，棲息著奇特、演化特殊的深海怪物。"
-    },
-    {
-        "name": "🕳️ 超深淵帶 / 海溝帶 (Hadalpelagic)",
-        "min": 6000,
-        "max": 11000,
-        "color": "#2B2B72",  # 極致暗紫黑
-        "desc": "地球上最深邃的海溝，生命跡象極為稀少，但仍有極限生物頑強生存。"
-    }
-]
-
-# ==========================================
-# 2. 初始化滑桿數值（利用 Session State 實現快速定位）
-# ==========================================
-if "depth_range" not in st.session_state:
-    # 預設顯示半深海帶到深海帶的範圍
-    st.session_state.depth_range = (200, 4000)
-
-# ==========================================
-# 3. 快速定位按鈕（一鍵直達對應區間）
-# ==========================================
-st.markdown("### 📍 快速定位海洋分層")
-col1, col2, col3, col4, col5 = st.columns(5)
-
-# 點擊按鈕後，會直接修改 session_state 中的滑桿數值並重整網頁
-if col1.button("☀️ 表層", use_container_width=True):
-    st.session_state.depth_range = (0, 200)
-    st.rerun()
-if col2.button("🌅 半深海", use_container_width=True):
-    st.session_state.depth_range = (200, 1000)
-    st.rerun()
-if col3.button("🌌 深海", use_container_width=True):
-    st.session_state.depth_range = (1000, 4000)
-    st.rerun()
-if col4.button("🌋 深淵", use_container_width=True):
-    st.session_state.depth_range = (4000, 6000)
-    st.rerun()
-if col5.button("🕳️ 超深淵", use_container_width=True):
-    st.session_state.depth_range = (6000, 11000)
-    st.rerun()
-
-# ==========================================
-# 4. 渲染深度範圍滑桿
-# ==========================================
-depth_range = st.slider(
-    "🔍 拖曳滑桿選擇自訂深度範圍 (公尺)",
-    min_value=0,
-    max_value=11000,
-    key="depth_range",  # 綁定狀態
-    step=100
-)
-
-# 取得使用者目前拉動的最小值與最大值
-sel_min, sel_max = depth_range
-
-# ==========================================
-# 5. 動態計算並顯示當前滑到的「生態區間」
-# ==========================================
-active_zones = []
-for zone in OCEAN_ZONES:
-    # 判斷使用者的選取範圍，是否與該生態帶有交集 (Overlap)
-    if not (sel_max < zone["min"] or sel_min > zone["max"]):
-        active_zones.append(zone)
-
-st.markdown("### 🏷️ 您目前正在探索的生態帶：")
-
-# 依據重疊的區間數量，動態調整排版欄位
-if active_zones:
-    cols = st.columns(len(active_zones))
-    for idx, zone in enumerate(active_zones):
-        with cols[idx]:
-            # 使用 HTML 配合您喜歡的霓虹/磨砂玻璃感打造漂亮卡片
-            st.markdown(
-                f"""
-                <div style="
-                    background-color: {zone['color']}15; 
-                    border-left: 4px solid {zone['color']}; 
-                    padding: 12px; 
-                    border-radius: 6px;
-                    margin-bottom: 15px;
-                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                    min-height: 140px;
-                ">
-                    <strong style="color: {zone['color']}; font-size: 15px;">{zone['name']}</strong><br/>
-                    <code style="background-color: transparent; color: #888; font-size: 11px;">{zone['min']}m - {zone['max']}m</code><br/>
-                    <p style="font-size: 12px; margin-top: 5px; color: #ddd; line-height: 1.4;">{zone['desc']}</p>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-else:
-    st.info("請拖曳滑桿以探索特定深度！")
-
 # 🟢 新增：潛水艇聲納環境音模組
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📡 深海環境音")
@@ -1093,6 +970,131 @@ if page == "🏠 首頁":
     with col3: st.metric("探索者生態圈", "歡迎你的加入")
 
 elif page == "🐟 魚類圖鑑":
+
+    # ==========================================
+    # 1. 定義海洋分層資料與精美配色
+    # ==========================================
+    OCEAN_ZONES = [
+        {
+            "name": "☀️ 表層帶 (Epipelagic)",
+            "min": 0,
+            "max": 200,
+            "color": "#FFD700",  # 金黃色
+            "desc": "光線充足，是海洋生物最繁盛、光合作用活躍的區域。"
+        },
+        {
+            "name": "🌅 中層帶 / 半深海帶 (Mesopelagic)",
+            "min": 200,
+            "max": 1000,
+            "color": "#5FD5FC",  # 天藍色
+            "desc": "微弱光線的弱光帶，許多深海生物白天在此隱匿，晚上浮上表層覓食。"
+        },
+        {
+            "name": "🌌 深層帶 / 深海帶 (Bathypelagic)",
+            "min": 1000,
+            "max": 4000,
+            "color": "#4169E1",  # 皇家藍
+            "desc": "進入完全黑暗的無光帶，這裡的生物多具有發光器官，承受巨大水壓。"
+        },
+        {
+            "name": "🌋 深淵帶 (Abyssopelagic)",
+            "min": 4000,
+            "max": 6000,
+            "color": "#2121E4",  # 午夜藍
+            "desc": "接近冰點的漆黑世界，水壓極高，棲息著奇特、演化特殊的深海怪物。"
+        },
+        {
+            "name": "🕳️ 超深淵帶 / 海溝帶 (Hadalpelagic)",
+            "min": 6000,
+            "max": 11000,
+            "color": "#2B2B72",  # 極致暗紫黑
+            "desc": "地球上最深邃的海溝，生命跡象極為稀少，但仍有極限生物頑強生存。"
+        }
+    ]
+
+    # ==========================================
+    # 2. 初始化滑桿數值（利用 Session State 實現快速定位）
+    # ==========================================
+    if "depth_range" not in st.session_state:
+        # 預設顯示半深海帶到深海帶的範圍
+        st.session_state.depth_range = (200, 4000)
+
+    # ==========================================
+    # 3. 快速定位按鈕（一鍵直達對應區間）
+    # ==========================================
+    st.markdown("### 📍 快速定位海洋分層")
+    col1, col2, col3, col4, col5 = st.columns(5)
+
+    # 點擊按鈕後，會直接修改 session_state 中的滑桿數值並重整網頁
+    if col1.button("☀️ 表層", use_container_width=True):
+        st.session_state.depth_range = (0, 200)
+        st.rerun()
+    if col2.button("🌅 半深海", use_container_width=True):
+        st.session_state.depth_range = (200, 1000)
+        st.rerun()
+    if col3.button("🌌 深海", use_container_width=True):
+        st.session_state.depth_range = (1000, 4000)
+        st.rerun()
+    if col4.button("🌋 深淵", use_container_width=True):
+        st.session_state.depth_range = (4000, 6000)
+        st.rerun()
+    if col5.button("🕳️ 超深淵", use_container_width=True):
+        st.session_state.depth_range = (6000, 11000)
+        st.rerun()
+
+    # ==========================================
+    # 4. 渲染深度範圍滑桿
+    # ==========================================
+    depth_range = st.slider(
+        "🔍 拖曳滑桿選擇自訂深度範圍 (公尺)",
+        min_value=0,
+        max_value=11000,
+        key="depth_range",  # 綁定狀態
+        step=100
+    )
+
+    # 取得使用者目前拉動的最小值與最大值
+    sel_min, sel_max = depth_range
+
+    # ==========================================
+    # 5. 動態計算並顯示當前滑到的「生態區間」
+    # ==========================================
+    active_zones = []
+    for zone in OCEAN_ZONES:
+        # 判斷使用者的選取範圍，是否與該生態帶有交集 (Overlap)
+        if not (sel_max < zone["min"] or sel_min > zone["max"]):
+            active_zones.append(zone)
+
+    st.markdown("### 🏷️ 您目前正在探索的生態帶：")
+
+    # 依據重疊的區間數量，動態調整排版欄位
+    if active_zones:
+        cols = st.columns(len(active_zones))
+        for idx, zone in enumerate(active_zones):
+            with cols[idx]:
+                # 使用 HTML 配合您喜歡的霓虹/磨砂玻璃感打造漂亮卡片
+                st.markdown(
+                    f"""
+                    <div style="
+                        background-color: {zone['color']}15; 
+                        border-left: 4px solid {zone['color']}; 
+                        padding: 12px; 
+                        border-radius: 6px;
+                        margin-bottom: 15px;
+                        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                        min-height: 140px;
+                    ">
+                        <strong style="color: {zone['color']}; font-size: 15px;">{zone['name']}</strong><br/>
+                        <code style="background-color: transparent; color: #888; font-size: 11px;">{zone['min']}m - {zone['max']}m</code><br/>
+                        <p style="font-size: 12px; margin-top: 5px; color: #ddd; line-height: 1.4;">{zone['desc']}</p>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+    else:
+        st.info("請拖曳滑桿以探索特定深度！")
+
+
     st.title("🐟 深海魚類圖鑑")
     
     # 🟢 1. 建立雙頁籤：一個放你原本的探索圖鑑，一個放我們的數據分析儀表板
