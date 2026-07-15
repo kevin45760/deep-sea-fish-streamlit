@@ -390,7 +390,7 @@ st.sidebar.markdown("### 📡 深海環境音")
 # 請把上傳到 GitHub 的 mp3 直連網址填在後面
 audio_tracks = {
     "📡 潛艇主聲納 (Sonar)": "https://raw.githubusercontent.com/kevin45760/deep-sea-fish-streamlit/main/sonar.mp3",
-    "🫧 深海微光氣泡 (Bubbles)": "https://raw.githubusercontent.com/kevin45760/deep-sea-fish-streamlit/main/bubbles.mp3",
+    "🫧 深海微光氣泡 (Bubbles)": "https://raw.githubusercontent.com/kevin45760/deep-sea-fish-streamlit/main/Bubble.mp3",
     "🐋 遠古鯨魚歌聲 (Whales)": "https://raw.githubusercontent.com/kevin45760/deep-sea-fish-streamlit/main/whale.mp3",
     "🌀 萬米深海暗流 (Abyss Hum)": "https://raw.githubusercontent.com/kevin45760/deep-sea-fish-streamlit/main/abyss.mp3"
 }
