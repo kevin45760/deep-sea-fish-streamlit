@@ -8,6 +8,8 @@ from email.mime.multipart import MIMEMultipart
 import re
 import uuid
 import time  # 🟢 引入時間模組，用來控制提示框顯示的停留時間
+import pandas as pd
+import plotly.express as p
 
 # 1. 網頁基本設定
 st.set_page_config(page_title="深海未知的奧妙", page_icon="🌊", layout="wide")
@@ -339,6 +341,180 @@ def update_fish(fish_id, name, en, depth, desc):
                  WHERE id = ?""", (name, en, depth, desc, fish_id))
     conn.commit()
     conn.close()
+
+def get_db_connection():
+    # 請換成你實際的 SQLite 資料庫檔名
+    return sqlite3.connect("your_database.db")
+
+def get_top_5_liked_fish():
+    """查詢點讚數前 5 名的魚類"""
+    conn = get_db_connection()
+    # 這裡假設你的 likes_registry 資料表紀錄了點讚
+    # 若你的 fish 資料表直接有 likes 欄位，可改為: "SELECT name, likes FROM fish ORDER BY likes DESC LIMIT 5"
+    query = """
+        SELECT f.name as "魚類名稱", COUNT(l.fish_id) as "人氣指數"
+        FROM fish f
+        LEFT JOIN likes_registry l ON f.id = l.fish_id
+        GROUP BY f.id
+        ORDER BY "人氣指數" DESC, f.name ASC
+        LIMIT 5
+    """
+    df = pd.read_sql_query(query, conn)
+    conn.close()
+    
+    # 防呆：如果大家都還沒有讚，給予預設值避免圖表空白
+    if df.empty or df["人氣指數"].sum() == 0:
+        df = pd.DataFrame({"魚類名稱": ["尚無數據"], "人氣指數": [0]})
+    return df
+
+def get_depth_statistics():
+    """計算平均深度、最深深度及總物種數"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # 這裡計算平均深度 = (最低棲息深度 + 最高棲息深度) / 2
+    cursor.execute("""
+        SELECT 
+            COUNT(id) as total_species,
+            AVG((depth_min + depth_max) / 2.0) as avg_depth,
+            MAX(depth_max) as max_depth
+        FROM fish
+    """)
+    stats = cursor.fetchone()
+    
+    # 找出真正的深海之王（棲息深度最深的魚）
+    cursor.execute("SELECT name, depth_max FROM fish ORDER BY depth_max DESC LIMIT 1")
+    deepest_fish = cursor.fetchone()
+    
+    conn.close()
+    return stats, deepest_fish
+
+def render_dashboard():
+    st.markdown("## 🛰️ 萬米深海數據觀測儀")
+    st.markdown("即時同步潛水艇收集之聲納數據與隊員喜好回饋。")
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # 📥 讀取數據
+    try:
+        stats, deepest_fish = get_depth_statistics()
+        total_species, avg_depth, max_depth = stats
+        deepest_fish_name = deepest_fish[0] if deepest_fish else "未知"
+    except Exception as e:
+        st.error(f"📡 數據載入失敗，請確認資料庫設定：{e}")
+        return
+
+    # -------------------------------------------------------------------------
+    # 1. 磨砂玻璃科技感指標卡 (Metrics)
+    # -------------------------------------------------------------------------
+    col1, col2, col3 = st.columns(3)
+    
+    metric_style = """
+    <div style="
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%);
+        border: 1px solid rgba(0, 229, 255, 0.15);
+        border-radius: 12px;
+        padding: 18px;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    ">
+        <p style="margin: 0; color: #8892b0; font-size: 13px; letter-spacing: 0.5px;">{title}</p>
+        <h2 style="margin: 8px 0 0 0; color: {color}; font-size: 24px; font-family: sans-serif; font-weight: bold;">{value}</h2>
+    </div>
+    """
+    
+    with col1:
+        st.markdown(metric_style.format(
+            title="🏷️ 已觀測物種總數", 
+            value=f"{total_species} 種", 
+            color="#64ffda"
+        ), unsafe_allow_html=True)
+        
+    with col2:
+        st.markdown(metric_style.format(
+            title="🌡️ 平均棲息深度", 
+            value=f"{int(avg_depth) if avg_depth else 0} 公尺", 
+            color="#00e5ff"
+        ), unsafe_allow_html=True)
+        
+    with col3:
+        # 深海之王顯示
+        st.markdown(metric_style.format(
+            title="👑 真正的深海之王", 
+            value=f"{deepest_fish_name}", 
+            color="#ff007f"
+        ), unsafe_allow_html=True)
+
+    st.markdown("<br><br>", unsafe_allow_html=True)
+
+    # -------------------------------------------------------------------------
+    # 2. Plotly 霓虹視覺長條圖 (Top 5 Liked Fish)
+    # -------------------------------------------------------------------------
+    st.markdown("### 🏆 隊員最喜愛深海生物排行")
+    
+    df_likes = get_top_5_liked_fish()
+    
+    # 建立一個水平長條圖，更方便閱讀長魚名
+    fig = px.bar(
+        df_likes, 
+        x="人氣指數", 
+        y="魚類名稱", 
+        orientation='h',
+        color="人氣指數",
+        color_continuous_scale=["#0a192f", "#0088cc", "#00e5ff", "#64ffda"], # 深海漸層發光色
+    )
+    
+    # 客製化 Plotly 樣式，完美與你的深海暗色主題融為一體
+    fig.update_layout(
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        font_color="#8be9fd",
+        title_font_color="#00e5ff",
+        showlegend=False,
+        margin=dict(l=20, r=20, t=10, b=10),
+        height=320,
+        xaxis=dict(
+            showgrid=True,
+            gridcolor="rgba(255, 255, 255, 0.05)",
+            tickformat="d", # 強制顯示為整數
+            title=""
+        ),
+        yaxis=dict(
+            autorange="reversed", # 讓第一名高居榜首
+            showgrid=False,
+            title=""
+        ),
+        coloraxis_showscale=False # 隱藏側邊漸層色彩條，保持極簡
+    )
+    
+    # 讓條形圖邊框帶有微光外框
+    fig.update_traces(
+        marker_line_color='#00e5ff',
+        marker_line_width=1.5,
+        opacity=0.85,
+        hovertemplate="<b>%{y}</b><br>獲得 👍 %{x} 個讚<extra></extra>"
+    )
+    
+    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+
+    # -------------------------------------------------------------------------
+    # 3. 探索小常識 / Insight 磨砂玻璃卡片
+    # -------------------------------------------------------------------------
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown(f"""
+    <div style="
+        background: rgba(10, 25, 47, 0.4);
+        border-left: 4px solid #ff007f;
+        border-radius: 4px 12px 12px 4px;
+        padding: 15px 20px;
+    ">
+        <p style="margin: 0 0 5px 0; color: #ff007f; font-weight: bold; font-size: 14px;">📡 聲納探索報告：</p>
+        <p style="margin: 0; color: #a8b2d1; font-size: 13.5px; line-height: 1.6;">
+            本艦觀測發現，目前已登錄的深海生物平均棲息在 <b>{int(avg_depth) if avg_depth else 0} 公尺</b> 的無光帶。
+            其中 <b>{deepest_fish_name}</b> 以高達 <b>{max_depth if max_depth else 0} 公尺</b> 的極限生存深度，稱霸深淵。
+            其體內演化出的獨特化學抗壓機制，仍是目前艦艇科學家積極研究的謎題。
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 
 # ==================== 側邊導航 ====================
 # 🟢 修改點：移除 key="nav_page"，改由變數與 index 控管，完美避開 Widget Key 鎖定限制
@@ -810,111 +986,125 @@ if page == "🏠 首頁":
 
 elif page == "🐟 魚類圖鑑":
     st.title("🐟 深海魚類圖鑑")
-    # 🟢 新增修改：若檢查到上傳成功旗標，就在圖鑑最上方顯示成功字樣框做檢視
-    if st.session_state.get("upload_success_alert"):
-        st.success("🎉 新物種登錄成功！已同步加入下方深海圖鑑供您檢視!")
-        del st.session_state.upload_success_alert  # 顯示一次後清除旗標，防止重整時重複跳出
-    search = st.text_input("搜尋魚種", placeholder="輸入中文或英文名稱探索深海魚種...", label_visibility="collapsed").lower()
     
-    for f in all_fish_data:
-        f_id, f_name, f_en, f_depth, f_desc, f_img, f_likes, f_time, f_uploader_id = f
+    # 🟢 1. 建立雙頁籤：一個放你原本的探索圖鑑，一個放我們的數據分析儀表板
+    tab_encyclopedia, tab_dashboard = st.tabs(["🗺️ 探索圖鑑", "📊 深海數據觀測站"])
+    
+    # -------------------------------------------------------------------------
+    # 頁籤一：原本的魚類圖鑑（維持原本的所有功能與 UI 邏輯）
+    # -------------------------------------------------------------------------
+    with tab_encyclopedia:
+        # 🟢 若檢查到上傳成功旗標，就在圖鑑最上方顯示成功字樣框做檢視
+        if st.session_state.get("upload_success_alert"):
+            st.success("🎉 新物種登錄成功！已同步加入下方深海圖鑑供您檢視!")
+            del st.session_state.upload_success_alert  # 顯示一次後清除旗標，防止重整時重複跳出
         
-        # 解析該魚類的深度區間
-        fish_min, fish_max = parse_depth_range(f_depth)
+        search = st.text_input("搜尋魚種", placeholder="輸入中文或英文名稱探索深海魚種...", label_visibility="collapsed").lower()
         
-        # 判斷式：名字/英文符合，且「魚類深度區間」與「使用者拉桿區間」有重疊
-        name_match = search in f_name.lower() or search in f_en.lower()
-        depth_match = (fish_min <= max_selected) and (fish_max >= min_selected)
-        
-        if name_match and depth_match:
-            # 🟢 接下來的 st.container 與卡片渲染代碼完全不變，維持你原本寫好的漂亮 UI 即可！
-            with st.container(border=True):
-                col1, col2 = st.columns([1, 2])
-                with col1:
-                    # 🟢 順手修正：配合 2026 新版規範將 use_container_width 改為 width="stretch"
-                    st.image(f_img, width="stretch")
-                with col2:
-                    st.markdown(f"""
-                        <div class="fish-title">🐟 {f_name}</div>
-                        <div class="fish-en">{f_en}</div>
-                        <div class="fish-meta">📍 棲息深度：{f_depth}</div>
-                        <p class="fish-desc">{f_desc}</p>
-                    """, unsafe_allow_html=True)
-                    
-                    # 🟢 修改：將原本的雙欄改為三欄，完美塞入語音導覽
-                    col_a, col_b, col_c = st.columns(3)
-                    with col_a:
-                        user_already_liked = has_user_liked(st.session_state.user_id, f_id)
-                        btn_label = f"❤️ 已喜歡 ({f_likes})" if user_already_liked else f"🤍 喜歡 ({f_likes})"
-                        if st.button(btn_label, key=f"like_{f_id}"):
-                            res = toggle_like_fish(f_id, st.session_state.user_id)
-                            if res == "added": st.toast("已加入你的喜歡清單！")
-                            else: st.toast("已收回讚。")
-                            time.sleep(0.3)
-                            st.rerun()  
-                            
-                    with col_b:
-                        if st.button("🔗 分享連結", key=f"share_{f_id}"):
-                            st.code(f"https://share.streamlit.io/your-username/repo-name/~/fish_id={f_id}", language=None)
-                            
-                    with col_c:
-                        # 🪐 運用 Web Speech API 打造零延遲的瀏覽器原生語音導覽
-                        # 使用 repr(f_desc) 自動幫 JavaScript 處理字串引號與換行防呆，穩如泰山
-                        tts_html = f"""
-                        <button onclick="speakDescription()" style="
-                            width: 100%;
-                            height: 35px;
-                            background: linear-gradient(135deg, #192d47 0%, #0d1826 100%);
-                            color: #8be9fd;
-                            border-radius: 12px;
-                            border: 1px solid rgba(139, 233, 253, 0.25);
-                            border-top: 1px solid rgba(139, 233, 253, 0.5);
-                            font-size: 14px;
-                            font-weight: 600;
-                            cursor: pointer;
-                            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-                            transition: all 0.2s ease;
-                        " onmouseover="this.style.background='linear-gradient(135deg, #00e5ff 0%, #00aaff 100%)'; this.style.color='#050b14';" onmouseout="this.style.background='linear-gradient(135deg, #192d47 0%, #0d1826 100%)'; this.style.color='#8be9fd';">
-                            🔊 聽取導覽
-                        </button>
+        for f in all_fish_data:
+            f_id, f_name, f_en, f_depth, f_desc, f_img, f_likes, f_time, f_uploader_id = f
+            
+            # 解析該魚類的深度區間
+            fish_min, fish_max = parse_depth_range(f_depth)
+            
+            # 判斷式：名字/英文符合，且「魚類深度區間」與「使用者拉桿區間」有重疊
+            name_match = search in f_name.lower() or search in f_en.lower()
+            depth_match = (fish_min <= max_selected) and (fish_max >= min_selected)
+            
+            if name_match and depth_match:
+                with st.container(border=True):
+                    col1, col2 = st.columns([1, 2])
+                    with col1:
+                        # 🟢 配合 2026 新版規範將 use_container_width 改為 width="stretch"
+                        st.image(f_img, width="stretch")
+                    with col2:
+                        st.markdown(f"""
+                            <div class="fish-title">🐟 {f_name}</div>
+                            <div class="fish-en">{f_en}</div>
+                            <div class="fish-meta">📍 棲息深度：{f_depth}</div>
+                            <p class="fish-desc">{f_desc}</p>
+                        """, unsafe_allow_html=True)
                         
-                        <script>
-                            function speakDescription() {{
-                                // 點擊時先強制切斷目前正在朗讀的聲音，避免多隻魚的聲音疊在一起
-                                window.speechSynthesis.cancel();
+                        # 🟢 修改：將原本的雙欄改為三欄，完美塞入語音導覽
+                        col_a, col_b, col_c = st.columns(3)
+                        with col_a:
+                            user_already_liked = has_user_liked(st.session_state.user_id, f_id)
+                            btn_label = f"❤️ 已喜歡 ({f_likes})" if user_already_liked else f"🤍 喜歡 ({f_likes})"
+                            if st.button(btn_label, key=f"like_{f_id}"):
+                                res = toggle_like_fish(f_id, st.session_state.user_id)
+                                if res == "added": st.toast("已加入你的喜歡清單！")
+                                else: st.toast("已收回讚。")
+                                time.sleep(0.3)
+                                st.rerun()  
                                 
-                                var msg = new SpeechSynthesisUtterance({repr(f_desc)});
-                                msg.lang = 'zh-TW'; // 指定台灣中文發音
-                                msg.rate = 1.0;     // 正常語速
-                                msg.pitch = 0.8;    // 稍微調低音調，讓聲音聽起來更具備深海探索的磁性沉穩感
+                        with col_b:
+                            if st.button("🔗 分享連結", key=f"share_{f_id}"):
+                                st.code(f"https://share.streamlit.io/your-username/repo-name/~/fish_id={f_id}", language=None)
                                 
-                                window.speechSynthesis.speak(msg);
-                            }}
-                        </script>
-                        """
-                        st.components.v1.html(tts_html, height=45)
+                        with col_c:
+                            # 🪐 運用 Web Speech API 打造零延遲的瀏覽器原生語音導覽
+                            # 使用 repr(f_desc) 自動幫 JavaScript 處理字串引號與換行防呆，穩如泰山
+                            tts_html = f"""
+                            <button onclick="speakDescription()" style="
+                                width: 100%;
+                                height: 35px;
+                                background: linear-gradient(135deg, #192d47 0%, #0d1826 100%);
+                                color: #8be9fd;
+                                border-radius: 12px;
+                                border: 1px solid rgba(139, 233, 253, 0.25);
+                                border-top: 1px solid rgba(139, 233, 253, 0.5);
+                                font-size: 14px;
+                                font-weight: 600;
+                                cursor: pointer;
+                                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+                                transition: all 0.2s ease;
+                            " onmouseover="this.style.background='linear-gradient(135deg, #00e5ff 0%, #00aaff 100%)'; this.style.color='#050b14';" onmouseout="this.style.background='linear-gradient(135deg, #192d47 0%, #0d1826 100%)'; this.style.color='#8be9fd';">
+                                🔊 聽取導覽
+                            </button>
+                            
+                            <script>
+                                function speakDescription() {{
+                                    // 點擊時先強制切斷目前正在朗讀的聲音，避免多隻魚的聲音疊在一起
+                                    window.speechSynthesis.cancel();
+                                    
+                                    var msg = new SpeechSynthesisUtterance({repr(f_desc)});
+                                    msg.lang = 'zh-TW'; // 指定台灣中文發音
+                                    msg.rate = 1.0;     // 正常語速
+                                    msg.pitch = 0.8;    // 稍微調低音調，讓聲音聽起來更具備深海探索的磁性沉穩感
+                                    
+                                    window.speechSynthesis.speak(msg);
+                                }}
+                            </script>
+                            """
+                            st.components.v1.html(tts_html, height=45)
 
-                    # 🟢 當 user_id 成功鎖定在網址後，重整網頁這裡依然能通過驗證！
-                    if f_uploader_id == st.session_state.user_id:
-                        st.markdown("---")
-                        show_edit = st.toggle("✏️ 編輯我的發現", key=f"toggle_{f_id}")
-                        
-                        if show_edit:
-                            with st.form(key=f"edit_form_{f_id}"):
-                                st.write("📝 **更新魚類資訊**")
-                                edit_name = st.text_input("魚類中文名稱", value=f_name)
-                                edit_en = st.text_input("英文學名", value=f_en)
-                                edit_depth = st.text_input("發現深度", value=f_depth)
-                                edit_desc = st.text_area("外觀與習性描述", value=f_desc)
-                                
-                                submit_edit = st.form_submit_button("💾 儲存修改")
-                                if submit_edit:
-                                    if edit_name and edit_depth and edit_desc:
-                                        update_fish(f_id, edit_name, edit_en, edit_depth, edit_desc)
-                                        st.success("✅ 資料更新成功！")
-                                        st.rerun()
-                                    else:
-                                        st.error("❌ 必填欄位不可留白！")
+                        # 🟢 當 user_id 成功鎖定在網址後，重整網頁這裡依然能通過驗證！
+                        if f_uploader_id == st.session_state.user_id:
+                            st.markdown("---")
+                            show_edit = st.toggle("✏️ 編輯我的發現", key=f"toggle_{f_id}")
+                            
+                            if show_edit:
+                                with st.form(key=f"edit_form_{f_id}"):
+                                    st.write("📝 **更新魚類資訊**")
+                                    edit_name = st.text_input("魚類中文名稱", value=f_name)
+                                    edit_en = st.text_input("英文學名", value=f_en)
+                                    edit_depth = st.text_input("發現深度", value=f_depth)
+                                    edit_desc = st.text_area("外觀與習性描述", value=f_desc)
+                                    
+                                    submit_edit = st.form_submit_button("💾 儲存修改")
+                                    if submit_edit:
+                                        if edit_name and edit_depth and edit_desc:
+                                            update_fish(f_id, edit_name, edit_en, edit_depth, edit_desc)
+                                            st.success("✅ 資料更新成功！")
+                                            st.rerun()
+                                        else:
+                                            st.error("❌ 必填欄位不可留白！")
+
+    # -------------------------------------------------------------------------
+    # 頁籤二：全新的深海數據觀測站（呼叫我們寫好的 Plotly 與指標卡功能）
+    # -------------------------------------------------------------------------
+    with tab_dashboard:
+        render_dashboard()
 
 elif page == "📸 相關資料上傳":
     st.title("📸 上傳你的深海魚發現")
