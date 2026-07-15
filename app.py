@@ -1096,29 +1096,29 @@ elif page == "🐟 魚類圖鑑":
                                 def make_edit_callback(fid):
                                     def callback():
                                         sel = st.session_state[f"edit_hab_sel_{fid}"]
-                                        if sel != "-- 手動自訂輸入 --":
+                                        if sel != "手動自訂輸入":
                                             st.session_state[f"edit_hab_val_state_{fid}"] = sel
                                         else:
                                             st.session_state[f"edit_hab_val_state_{fid}"] = ""
                                     return callback
 
                                 edit_habitat_sel = st.selectbox(
-                                    "🔮 選擇現有地區 (可選取快速帶入)", 
-                                    ["-- 手動自訂輸入 --"] + db_habitats, 
+                                    "🔮 選擇現有地區 * (可選取快速帶入)", 
+                                    ["手動自訂輸入"] + db_habitats, 
                                     index=default_idx, 
                                     key=f"edit_hab_sel_{f_id}",
                                     on_change=make_edit_callback(f_id)
                                 )
                                 
                                 # 當選了固定地區時，防呆鎖定輸入框
-                                is_edit_disabled = (st.session_state[f"edit_hab_sel_{f_id}"] != "-- 手動自訂輸入 --")
+                                is_edit_disabled = (st.session_state[f"edit_hab_sel_{f_id}"] != "手動自訂輸入")
                                     
                                 edit_habitat = st.text_input(
-                                    "✍️ 棲息地區 * (支援直接自訂輸入)", 
+                                    "自訂地區 (支援直接自訂輸入)", 
                                     key=f"edit_hab_val_state_{f_id}",
                                     disabled=is_edit_disabled,
                                     placeholder="可在這直接打字或直接修改...", 
-                                    help="若要手動打字，請將上方的選擇現有地區切換為『-- 手動自訂輸入 --』"
+                                    help="若要手動打字，請將上方的選擇現有地區切換為『手動自訂輸入』"
                                 )
                                 
                                 edit_desc = st.text_area("外觀與習性描述", value=f_desc, key=f"edit_desc_{f_id}")
@@ -1148,7 +1148,7 @@ elif page == "📸 相關資料上傳":
     # 定義下拉選單變動時的 Callback 函式
     def on_habitat_select_change():
         selected = st.session_state.upload_habitat_sel
-        if selected != "-- 手動自訂輸入 --":
+        if selected != "手動自訂輸入":
             st.session_state.upload_habitat_val = selected
         else:
             st.session_state.upload_habitat_val = ""
@@ -1173,21 +1173,21 @@ elif page == "📸 相關資料上傳":
         # 5. 下拉選單 (選擇現有地區，非必填，維持原樣)
         selected_habitat = st.selectbox(
             "🔮 選擇現有地區", 
-            ["-- 手動自訂輸入 --"] + db_habitats,
+            ["手動自訂輸入"] + db_habitats,
             key="upload_habitat_sel",
             on_change=on_habitat_select_change
         )
         
         # 6. 棲息地區 (必填)
         st.markdown("✍️ 棲息地區 :red[*]")
-        is_disabled = (st.session_state.upload_habitat_sel != "-- 手動自訂輸入 --")
+        is_disabled = (st.session_state.upload_habitat_sel != "手動自訂輸入")
         final_habitat = st.text_input(
             "棲息地區", 
             key="upload_habitat_val",
             placeholder="可在這直接打字輸入全新地區...",
             disabled=is_disabled,
             label_visibility="collapsed",
-            help="若要手動打字，請將上方的『選擇現有地區』切換為『-- 手動自訂輸入 --』"
+            help="若要手動打字，請將上方的『選擇現有地區』切換為『手動自訂輸入』"
         )
             
         # 7. 外觀與習性描述 (必填)
