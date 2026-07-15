@@ -1077,7 +1077,6 @@ elif page == "🐟 魚類圖鑑":
                             show_edit = st.toggle("✏️ 編輯我的發現", key=f"toggle_{f_id}")
                             
                             if show_edit:
-                                # 🟢 取消 st.form 改用一般容器，實現無延遲 Datalist 聯動
                                 st.write("📝 **更新魚類資訊**")
                                 edit_name = st.text_input("魚類中文名稱", value=f_name, key=f"edit_name_{f_id}")
                                 edit_en = st.text_input("英文學名", value=f_en, key=f"edit_en_{f_id}")
@@ -1087,26 +1086,39 @@ elif page == "🐟 魚類圖鑑":
                                 if f_habitat in db_habitats:
                                     default_idx = db_habitats.index(f_habitat) + 1
                                 else:
-                                    default_idx = 0  # 預設指向 "-- 手動自訂輸入 --"
+                                    default_idx = 0  
                                     
+                                # 初始化編輯用 habitat 數值
+                                if f"edit_hab_val_state_{f_id}" not in st.session_state:
+                                    st.session_state[f"edit_hab_val_state_{f_id}"] = f_habitat
+
+                                # 編輯專用 Callback
+                                def make_edit_callback(fid):
+                                    def callback():
+                                        sel = st.session_state[f"edit_hab_sel_{fid}"]
+                                        if sel != "-- 手動自訂輸入 --":
+                                            st.session_state[f"edit_hab_val_state_{fid}"] = sel
+                                        else:
+                                            st.session_state[f"edit_hab_val_state_{fid}"] = ""
+                                    return callback
+
                                 edit_habitat_sel = st.selectbox(
                                     "🔮 選擇現有地區 (可選取快速帶入)", 
                                     ["-- 手動自訂輸入 --"] + db_habitats, 
                                     index=default_idx, 
-                                    key=f"edit_hab_sel_{f_id}"
+                                    key=f"edit_hab_sel_{f_id}",
+                                    on_change=make_edit_callback(f_id)
                                 )
                                 
-                                # 當選擇自訂時，輸入框帶入原值（若原值非現有選項的話）
-                                if edit_habitat_sel == "-- 手動自訂輸入 --":
-                                    edit_default_hab = f_habitat if f_habitat not in db_habitats else ""
-                                else:
-                                    edit_default_hab = edit_habitat_sel
+                                # 當選了固定地區時，防呆鎖定輸入框
+                                is_edit_disabled = (st.session_state[f"edit_hab_sel_{f_id}"] != "-- 手動自訂輸入 --")
                                     
                                 edit_habitat = st.text_input(
                                     "✍️ 棲息地區 * (支援直接自訂輸入)", 
-                                    value=edit_default_hab, 
-                                    placeholder="可在這直接打字（如：44、我的）或直接修改...", 
-                                    key=f"edit_hab_val_{f_id}"
+                                    key=f"edit_hab_val_state_{f_id}",
+                                    disabled=is_edit_disabled,
+                                    placeholder="可在這直接打字或直接修改...", 
+                                    help="若要手動打字，請將上方的選擇現有地區切換為『-- 手動自訂輸入 --』"
                                 )
                                 
                                 edit_desc = st.text_area("外觀與習性描述", value=f_desc, key=f"edit_desc_{f_id}")
@@ -1129,23 +1141,42 @@ elif page == "📸 相關資料上傳":
     
     db_habitats = load_habitats()
     
-    # 🟢 移除 st.form 以獲得流暢的原生自訂 Datalist 聯動體驗
+    # 初始化 session state 變數
+    if "upload_habitat_val" not in st.session_state:
+        st.session_state.upload_habitat_val = ""
+
+    # 定義下拉選單變動時的 Callback 函式
+    def on_habitat_select_change():
+        selected = st.session_state.upload_habitat_sel
+        if selected != "-- 手動自訂輸入 --":
+            # 選了具體地區，強制將輸入框的值鎖定並覆蓋
+            st.session_state.upload_habitat_val = selected
+        else:
+            # 切換回自訂時，才清空讓使用者自己打
+            st.session_state.upload_habitat_val = ""
+
     with st.container(border=True):
         name = st.text_input("魚類中文名稱 *")
         en = st.text_input("英文學名 (選填)")
         depth = st.text_input("發現深度 (例如: 800米) *")
         
-        # 下拉選單：若不需自訂，選取即可快速填入
-        selected_habitat = st.selectbox("🔮 選擇現有地區", ["-- 手動自訂輸入 --"] + db_habitats)
+        # 下拉選單：綁定 key 與 callback
+        selected_habitat = st.selectbox(
+            "🔮 選擇現有地區", 
+            ["-- 手動自訂輸入 --"] + db_habitats,
+            key="upload_habitat_sel",
+            on_change=on_habitat_select_change
+        )
         
-        # 動態判斷輸入框的預設值
-        default_hab = "" if selected_habitat == "-- 手動自訂輸入 --" else selected_habitat
+        # 輸入框：如果是固定地區，我們可以加上 disabled 屬性，防呆不讓使用者去手動刪除它！
+        is_disabled = (st.session_state.upload_habitat_sel != "-- 手動自訂輸入 --")
         
-        # 輸入框：使用者可以手動打任何字（如：44），完全不會被 dropdown 限制
         final_habitat = st.text_input(
             "✍️ 棲息地區 *", 
-            value=default_hab, 
-            placeholder="可在這直接打字輸入全新地區，或微調修改已選取的地區..."
+            key="upload_habitat_val",
+            placeholder="可在這直接打字輸入全新地區...",
+            disabled=is_disabled,  # 當選了現有地區時，直接鎖死輸入框防手殘刪除！
+            help="若要手動打字，請將上方的『選擇現有地區』切換為『-- 手動自訂輸入 --』"
         )
             
         desc = st.text_area("外觀與習性描述 *")
@@ -1159,7 +1190,6 @@ elif page == "📸 相關資料上傳":
             with open(file_path, "wb") as f:
                 f.write(uploaded_file.getbuffer())
             
-            # 寫入資料庫
             add_fish(name, en, depth, desc, file_path, st.session_state.user_id, final_habitat.strip())
             
             st.session_state.upload_success_alert = True
