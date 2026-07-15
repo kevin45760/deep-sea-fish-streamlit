@@ -386,11 +386,49 @@ st.sidebar.markdown("### 📡 深海環境音")
 
 # 使用公用版權的深海微光/環境 Hum 音訊網址（後續可自行更換連結）
 # 🎯 換成你專屬的 GitHub Raw 永久直連網址，防盜連直接解鎖！
-ambient_audio_url = "https://raw.githubusercontent.com/kevin45760/deep-sea-fish-streamlit/main/sonar.mp3"
+# 🟢 1. 定義你的深海音效庫（可以無限追加！）
+# 請把上傳到 GitHub 的 mp3 直連網址填在後面
+audio_tracks = {
+    "📡 潛艇主聲納 (Sonar)": "https://raw.githubusercontent.com/kevin45760/deep-sea-fish-streamlit/main/sonar.mp3",
+    "🫧 深海微光氣泡 (Bubbles)": "https://raw.githubusercontent.com/kevin45760/deep-sea-fish-streamlit/main/bubbles.mp3",
+    "🐋 遠古鯨魚歌聲 (Whales)": "https://raw.githubusercontent.com/kevin45760/deep-sea-fish-streamlit/main/whale.mp3",
+    "🌀 萬米深海暗流 (Abyss Hum)": "https://raw.githubusercontent.com/kevin45760/deep-sea-fish-streamlit/main/abyss.mp3"
+}
 
+# 🟢 2. 用 Python 動態生成 HTML 的下拉選單選項
+options_html = ""
+for name, url in audio_tracks.items():
+    options_html += f'<option value="{url}">{name}</option>'
+
+# 預設播放第一個音效
+default_url = list(audio_tracks.values())[0]
+
+# 🟢 3. 科技感多音效控制台 HTML & JS
 audio_control_html = f"""
-<div style="display: flex; align-items: center; justify-content: center; padding: 5px;">
-    <audio id="sonar-audio" loop src="{ambient_audio_url}"></audio> 
+<div style="font-family: system-ui, -apple-system, sans-serif; padding: 5px;">
+    
+    <!-- 🪐 霓虹微光下拉選單 -->
+    <select id="audio-select" onchange="changeTrack()" style="
+        width: 100%;
+        background: #0d1826;
+        color: #00e5ff;
+        border: 1px solid rgba(0, 229, 255, 0.3);
+        border-radius: 10px;
+        padding: 8px;
+        font-size: 13.5px;
+        font-weight: 500;
+        outline: none;
+        cursor: pointer;
+        box-shadow: 0 0 10px rgba(0, 229, 255, 0.05);
+        margin-bottom: 12px;
+        transition: all 0.3s ease;
+    " onfocus="this.style.borderColor='#00e5ff'; this.style.boxShadow='0 0 15px rgba(0,229,255,0.2)';" onblur="this.style.borderColor='rgba(0, 229, 255, 0.3)';">
+        {options_html}
+    </select>
+
+    <audio id="ambient-audio" loop src="{default_url}"></audio> 
+    
+    <!-- 🪐 播放 / 暫停控制按鈕 -->
     <button onclick="toggleAudio()" id="sonar-btn" style="
         width: 100%;
         background: linear-gradient(135deg, #00e5ff 0%, #00aaff 100%); 
@@ -403,23 +441,43 @@ audio_control_html = f"""
         box-shadow: 0 0 15px rgba(0, 229, 255, 0.3); 
         transition: all 0.3s ease;
     ">
-        ▶️ 開啟深海聲納
+        ▶️ 啟動環境音效
     </button>
 </div>
 
 <script>
+    var audio = document.getElementById('ambient-audio');
+    var btn = document.getElementById('sonar-btn');
+    var select = document.getElementById('audio-select');
+
+    // 🎵 切換音軌邏輯
+    function changeTrack() {{
+        var isPlaying = !audio.paused;
+        audio.src = select.value;
+        audio.load();
+        
+        // 如果原本就在播放中，切換後直接自動播放新音效，體驗超流暢
+        if (isPlaying) {{
+            audio.play().catch(function(error) {{
+                console.log("播放被瀏覽器阻擋: ", error);
+            }});
+        }}
+    }}
+
+    // ⏸️ 播放與暫停控制
     function toggleAudio() {{
-        var audio = document.getElementById('sonar-audio');
-        var btn = document.getElementById('sonar-btn');
         if (audio.paused) {{
-            audio.play();
-            btn.innerHTML = '⏸️ 暫停聲納音效';
-            btn.style.background = 'linear-gradient(135deg, #ff4b4b 0%, #ff2b2b 100%)';
-            btn.style.color = '#ffffff';
-            btn.style.boxShadow = '0 0 15px rgba(255, 75, 75, 0.4)';
+            audio.play().then(function() {{
+                btn.innerHTML = '⏸️ 暫停深海音效';
+                btn.style.background = 'linear-gradient(135deg, #ff4b4b 0%, #ff2b2b 100%)';
+                btn.style.color = '#ffffff';
+                btn.style.boxShadow = '0 0 15px rgba(255, 75, 75, 0.4)';
+            }}).catch(function(error) {{
+                alert("請先與網頁任意地方互動，才能開啟音效喔！");
+            }});
         }} else {{
             audio.pause();
-            btn.innerHTML = '▶️ 開啟深海聲納';
+            btn.innerHTML = '▶️ 啟動環境音效';
             btn.style.background = 'linear-gradient(135deg, #00e5ff 0%, #00aaff 100%)';
             btn.style.color = '#050b14';
             btn.style.boxShadow = '0 0 15px rgba(0, 229, 255, 0.3)';
@@ -427,8 +485,10 @@ audio_control_html = f"""
     }}
 </script>
 """
+
+# 在側邊欄渲染，高度微調到 110px 剛好容納下拉選單與按鈕
 with st.sidebar:
-    st.components.v1.html(audio_control_html, height=60)
+    st.components.v1.html(audio_control_html, height=110)
 
 # --- 【核心路由攔截】：成功頁面檢視 ---
 if "success_fish_id" in st.session_state:
