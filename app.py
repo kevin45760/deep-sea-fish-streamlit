@@ -510,7 +510,7 @@ def render_dashboard():
     ">
         <p style="margin: 0 0 5px 0; color: #ff007f; font-weight: bold; font-size: 14px;">📡 聲納探索報告：</p>
         <p style="margin: 0; color: #a8b2d1; font-size: 13.5px; line-height: 1.6;">
-            本艦觀測發現，目前已登錄的深海生物平均棲息在 <b>{int(avg_depth) if avg_depth else 0} 公尺</b> 的無光帶。
+            本艦觀測發現，目前已登錄的深海生物 average 棲息在 <b>{int(avg_depth) if avg_depth else 0} 公尺</b> 的無光帶。
             其中 <b>{deepest_fish_name}</b> 以高達 <b>{max_depth if max_depth else 0} 公尺</b> 的極限生存深度，稱霸深淵。
             其體內演化出的獨特化學抗壓機制，仍是目前艦艇科學家積極研究的謎題。
         </p>
@@ -834,7 +834,7 @@ if page == "🏠 首頁":
             </div>
 
             <div class="slide">
-                <img src="https://images.unsplash.com/photo-1583212292454-1fe6229603b7?q=80&w=1200" alt="日本海溝">
+                <img src="https://images.unsplash.com/photo-1520114878144-6123749968dd?q=80&w=1200" alt="日本海溝">
                 <div class="caption-panel">
                     <div class="caption-title">8. 日本海溝 (Japan Trench) · 西太平洋</div>
                     <div class="caption-desc">位於日本列島以東，最深處達 8,412 米。這裡是太平洋板塊隱沒的核心地帶，頻繁引發大型深源地震與海嘯。</div>
@@ -1077,46 +1077,49 @@ elif page == "🐟 魚類圖鑑":
                             show_edit = st.toggle("✏️ 編輯我的發現", key=f"toggle_{f_id}")
                             
                             if show_edit:
-                                with st.form(key=f"edit_form_{f_id}"):
-                                    st.write("📝 **更新魚類資訊**")
-                                    edit_name = st.text_input("魚類中文名稱", value=f_name)
-                                    edit_en = st.text_input("英文學名", value=f_en)
-                                    edit_depth = st.text_input("發現深度", value=f_depth)
+                                # 🟢 取消 st.form 改用一般容器，實現無延遲 Datalist 聯動
+                                st.write("📝 **更新魚類資訊**")
+                                edit_name = st.text_input("魚類中文名稱", value=f_name, key=f"edit_name_{f_id}")
+                                edit_en = st.text_input("英文學名", value=f_en, key=f"edit_en_{f_id}")
+                                edit_depth = st.text_input("發現深度", value=f_depth, key=f"edit_depth_{f_id}")
+                                
+                                # 決定選單的預設選取 index
+                                if f_habitat in db_habitats:
+                                    default_idx = db_habitats.index(f_habitat) + 1
+                                else:
+                                    default_idx = 0  # 預設指向 "-- 手動自訂輸入 --"
                                     
-                                    # 🟢 編輯介面：Google 表單邏輯
-                                    habitat_options = db_habitats + ["其他 (自訂地區)"]
-                                    if f_habitat in db_habitats:
-                                        default_idx = db_habitats.index(f_habitat)
+                                edit_habitat_sel = st.selectbox(
+                                    "🔮 選擇現有地區 (可選取快速帶入)", 
+                                    ["-- 手動自訂輸入 --"] + db_habitats, 
+                                    index=default_idx, 
+                                    key=f"edit_hab_sel_{f_id}"
+                                )
+                                
+                                # 當選擇自訂時，輸入框帶入原值（若原值非現有選項的話）
+                                if edit_habitat_sel == "-- 手動自訂輸入 --":
+                                    edit_default_hab = f_habitat if f_habitat not in db_habitats else ""
+                                else:
+                                    edit_default_hab = edit_habitat_sel
+                                    
+                                edit_habitat = st.text_input(
+                                    "✍️ 棲息地區 * (支援直接自訂輸入)", 
+                                    value=edit_default_hab, 
+                                    placeholder="可在這直接打字（如：44、我的）或直接修改...", 
+                                    key=f"edit_hab_val_{f_id}"
+                                )
+                                
+                                edit_desc = st.text_area("外觀與習性描述", value=f_desc, key=f"edit_desc_{f_id}")
+                                
+                                submit_edit = st.button("💾 儲存修改", key=f"btn_edit_{f_id}", use_container_width=True)
+                                if submit_edit:
+                                    if edit_name and edit_depth and edit_desc and edit_habitat.strip():
+                                        update_fish(f_id, edit_name, edit_en, edit_depth, edit_desc, edit_habitat.strip())
+                                        st.success("✅ 資料更新成功！")
+                                        time.sleep(0.5)
+                                        st.rerun()
                                     else:
-                                        if f_habitat != "未標記":
-                                            habitat_options = [f_habitat] + db_habitats + ["其他 (自訂地區)"]
-                                            default_idx = 0
-                                        else:
-                                            default_idx = 0
-                                        
-                                    edit_habitat_sel = st.selectbox("棲息地區", habitat_options, index=default_idx, key=f"edit_hab_sel_{f_id}")
-                                    
-                                    # 如果選到「其他 (自訂地區)」，才跳出輸入框讓使用者輸入新地區
-                                    edit_habitat_input = ""
-                                    if edit_habitat_sel == "其他 (自訂地區)":
-                                        edit_habitat_input = st.text_input("請輸入自訂棲息地區", value="", key=f"edit_hab_custom_{f_id}", placeholder="請在這裡輸入自訂地區名稱...")
-                                        edit_habitat = edit_habitat_input.strip()
-                                    else:
-                                        edit_habitat = edit_habitat_sel
-                                        
-                                    edit_desc = st.text_area("外觀與習性描述", value=f_desc)
-                                    
-                                    submit_edit = st.form_submit_button("💾 儲存修改")
-                                    if submit_edit:
-                                        # 確保有正確抓到自訂值
-                                        final_edit_habitat = edit_habitat_input.strip() if edit_habitat_sel == "其他 (自訂地區)" else edit_habitat_sel
-                                        
-                                        if edit_name and edit_depth and edit_desc and final_edit_habitat:
-                                            update_fish(f_id, edit_name, edit_en, edit_depth, edit_desc, final_edit_habitat)
-                                            st.success("✅ 資料更新成功！")
-                                            st.rerun()
-                                        else:
-                                            st.error("❌ 必填欄位不可留白！")
+                                        st.error("❌ 必填欄位不可留白！")
 
     with tab_dashboard:
         render_dashboard()
@@ -1124,41 +1127,40 @@ elif page == "🐟 魚類圖鑑":
 elif page == "📸 相關資料上傳":
     st.title("📸 上傳你的深海魚發現")
     
-    # 🟢 讀取現有地區，並加上 Google 表單專屬的「其他 (自訂地區)」
     db_habitats = load_habitats()
-    habitat_options = db_habitats + ["其他 (自訂地區)"]
     
-    with st.form("upload_form", clear_on_submit=True):
+    # 🟢 移除 st.form 以獲得流暢的原生自訂 Datalist 聯動體驗
+    with st.container(border=True):
         name = st.text_input("魚類中文名稱 *")
         en = st.text_input("英文學名 (選填)")
         depth = st.text_input("發現深度 (例如: 800米) *")
         
-        # 使用者在此下拉選擇，如果不需要自訂，直接從裡面選就好
-        selected_habitat = st.selectbox("棲息地區 *", habitat_options)
+        # 下拉選單：若不需自訂，選取即可快速填入
+        selected_habitat = st.selectbox("🔮 選擇現有地區", ["-- 手動自訂輸入 --"] + db_habitats)
         
-        # 🟢 核心變更：完全模仿 Google 表單！當選到「其他 (自訂地區)」時，才在下方顯示輸入框
-        custom_habitat_input = ""
-        if selected_habitat == "其他 (自訂地區)":
-            custom_habitat_input = st.text_input("請輸入自訂棲息地區 (例如：馬里亞納海溝、黑海、加拉巴哥熱泉) *", value="", placeholder="請在這裡手動輸入自訂地區...")
+        # 動態判斷輸入框的預設值
+        default_hab = "" if selected_habitat == "-- 手動自訂輸入 --" else selected_habitat
+        
+        # 輸入框：使用者可以手動打任何字（如：44），完全不會被 dropdown 限制
+        final_habitat = st.text_input(
+            "✍️ 棲息地區 *", 
+            value=default_hab, 
+            placeholder="可在這直接打字輸入全新地區，或微調修改已選取的地區..."
+        )
             
         desc = st.text_area("外觀與習性描述 *")
         uploaded_file = st.file_uploader("選擇照片", type=["jpg", "png", "jpeg"])
-        submitted = st.form_submit_button("🚀 發布至圖鑑")
+        
+        submitted = st.button("🚀 發布至圖鑑", use_container_width=True)
         
     if submitted:
-        # 計算最終寫入資料庫的 habitat 值
-        if selected_habitat == "其他 (自訂地區)":
-            final_habitat = custom_habitat_input.strip()
-        else:
-            final_habitat = selected_habitat
-            
-        if uploaded_file and name and depth and desc and final_habitat:
+        if uploaded_file and name and depth and desc and final_habitat.strip():
             file_path = os.path.join("uploads", uploaded_file.name)
             with open(file_path, "wb") as f:
                 f.write(uploaded_file.getbuffer())
             
             # 寫入資料庫
-            add_fish(name, en, depth, desc, file_path, st.session_state.user_id, final_habitat)
+            add_fish(name, en, depth, desc, file_path, st.session_state.user_id, final_habitat.strip())
             
             st.session_state.upload_success_alert = True
             st.session_state.page_goto = "🐟 魚類圖鑑"  
@@ -1167,7 +1169,7 @@ elif page == "📸 相關資料上傳":
             time.sleep(1.2)
             st.rerun()
         else:
-            st.error("❌ 請完整填寫必填欄位（若選擇其他，自訂輸入框亦不能留白）並上傳照片！")
+            st.error("❌ 請確認所有必填欄位（帶 * 號）皆已填寫，並已上傳照片！")
         
 
 elif page == "📧 聯絡我們":
