@@ -163,6 +163,13 @@ st.markdown("""
         transform: translateY(1px) !important;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !important;
     }
+               
+    .st-emotion-cache-15zrj4w a, 
+    a.anchor-link, 
+    [data-testid="stHeaderActionElements"] {
+        display: none !important;
+    }   
+
 </style>
 """, unsafe_allow_html=True)
 
