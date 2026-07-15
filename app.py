@@ -1149,18 +1149,28 @@ elif page == "📸 相關資料上傳":
     def on_habitat_select_change():
         selected = st.session_state.upload_habitat_sel
         if selected != "-- 手動自訂輸入 --":
-            # 選了具體地區，強制將輸入框的值鎖定並覆蓋
             st.session_state.upload_habitat_val = selected
         else:
-            # 切換回自訂時，才清空讓使用者自己打
             st.session_state.upload_habitat_val = ""
 
     with st.container(border=True):
-        name = st.text_input("魚類中文名稱 *")
-        en = st.text_input("英文學名 (選填)")
-        depth = st.text_input("發現深度 (例如: 800米) *")
+        # 1. 頂部紅字提醒（模仿 Google 表單）
+        st.markdown("<span style='color: #d93025; font-size: 0.9rem;'>*必填</span>", unsafe_allow_html=True)
+        st.write("") # 留一點小空隙
+
+        # 2. 魚類中文名稱 (必填)
+        st.markdown("魚類中文名稱 :red[*]")
+        name = st.text_input("魚類中文名稱", label_visibility="collapsed")
         
-        # 下拉選單：綁定 key 與 callback
+        # 3. 英文學名 (選填，無星號)
+        st.markdown("英文學名 (選填)")
+        en = st.text_input("英文學名", label_visibility="collapsed")
+        
+        # 4. 發現深度 (必填)
+        st.markdown("發現深度 (例如: 800米) :red[*]")
+        depth = st.text_input("發現深度", label_visibility="collapsed")
+        
+        # 5. 下拉選單 (選擇現有地區，非必填，維持原樣)
         selected_habitat = st.selectbox(
             "🔮 選擇現有地區", 
             ["-- 手動自訂輸入 --"] + db_habitats,
@@ -1168,20 +1178,27 @@ elif page == "📸 相關資料上傳":
             on_change=on_habitat_select_change
         )
         
-        # 輸入框：如果是固定地區，我們可以加上 disabled 屬性，防呆不讓使用者去手動刪除它！
+        # 6. 棲息地區 (必填)
+        st.markdown("✍️ 棲息地區 :red[*]")
         is_disabled = (st.session_state.upload_habitat_sel != "-- 手動自訂輸入 --")
-        
         final_habitat = st.text_input(
-            "✍️ 棲息地區 *", 
+            "棲息地區", 
             key="upload_habitat_val",
             placeholder="可在這直接打字輸入全新地區...",
-            disabled=is_disabled,  # 當選了現有地區時，直接鎖死輸入框防手殘刪除！
+            disabled=is_disabled,
+            label_visibility="collapsed",
             help="若要手動打字，請將上方的『選擇現有地區』切換為『-- 手動自訂輸入 --』"
         )
             
-        desc = st.text_area("外觀與習性描述 *")
-        uploaded_file = st.file_uploader("選擇照片", type=["jpg", "png", "jpeg"])
+        # 7. 外觀與習性描述 (必填)
+        st.markdown("外觀與習性描述 :red[*]")
+        desc = st.text_area("外觀與習性描述", label_visibility="collapsed")
         
+        # 8. 選擇照片 (必填，這裡假設照片為必填)
+        st.markdown("選擇照片 :red[*]")
+        uploaded_file = st.file_uploader("選擇照片", type=["jpg", "png", "jpeg"], label_visibility="collapsed")
+        
+        st.write("") # 留空隙
         submitted = st.button("🚀 發布至圖鑑", use_container_width=True)
         
     if submitted:
