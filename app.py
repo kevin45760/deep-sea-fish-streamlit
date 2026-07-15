@@ -7,29 +7,26 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import re
 import uuid
-import time  # 🟢 引入時間模組，用來控制提示框顯示的停留時間
+import time  # 🟢 用來控制提示框顯示的停留時間
 import pandas as pd
 import plotly.express as px
 
 # 1. 網頁基本設定
 st.set_page_config(page_title="深海未知的奧妙", page_icon="🌊", layout="wide")
 
-# 🟢 2. 初始化瀏覽器身分代碼 (結合 st.query_params 讓 F5 刷新不失憶)
+# 🟢 初始化瀏覽器身分代碼 (結合 st.query_params 讓 F5 刷新不失憶)
 if "uid" in st.query_params:
-    # 如果網址列有帶 uid 參數，直接拿來當作目前使用者的 user_id
     st.session_state.user_id = st.query_params["uid"]
 else:
-    # 如果網址列沒有（全新訪客），檢查 session 內有沒有，都沒有才發配新的
     if "user_id" not in st.session_state:
         st.session_state.user_id = str(uuid.uuid4())
-    # 將這個 user_id 釘死到網址列上，這樣重整時就能被上方的 if 抓到
     st.query_params["uid"] = st.session_state.user_id
 
 # 初始化側邊欄導航狀態
 if "nav_page" not in st.session_state:
     st.session_state.nav_page = "🏠 首頁"
 
-# 🟢 修正點：安全跳轉機制，避免直接修改 widget 綁定的 nav_page 導致 Streamlit 報錯或選單閃爍
+# 安全跳轉機制，避免直接修改 widget 綁定的 nav_page 導致 Streamlit 報錯或選單閃爍
 if "page_goto" in st.session_state:
     st.session_state.nav_page = st.session_state.page_goto
     del st.session_state.page_goto
@@ -39,8 +36,8 @@ st.markdown("""
 <style>
     /* 🔍 利用 :has() 確保只針對「圖鑑搜尋框」套用膠囊深海風格 */
     div[data-testid="stTextInputRootElement"]:has(input[placeholder*="探索深海魚種"]) {
-        border-radius: 30px !important; /* 讓兩端變成完美的圓弧膠囊狀 */
-        background: rgba(255, 255, 255, 0.04) !important; /* 輕微的磨砂玻璃底色 */
+        border-radius: 30px !important; 
+        background: rgba(255, 255, 255, 0.04) !important; 
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
         padding: 4px 12px !important;
@@ -48,14 +45,12 @@ st.markdown("""
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
     
-    /* 滑鼠懸停（Hover）時的微光外框 */
     div[data-testid="stTextInputRootElement"]:hover {
         background: rgba(255, 255, 255, 0.07) !important;
         border-color: rgba(0, 229, 255, 0.3) !important;
         box-shadow: 0 8px 32px 0 rgba(0, 229, 255, 0.1) !important;
     }
             
-    /* 點擊輸入（Focus）時的科技感霓虹藍發光 */
     div[data-testid="stTextInputRootElement"]:focus-within {
         background: rgba(13, 30, 54, 0.9) !important;
         border-color: #00e5ff !important;
@@ -64,7 +59,6 @@ st.markdown("""
             0 12px 30px rgba(0, 0, 0, 0.5) !important;
     }
 
-    /* 僅在搜尋框內部嵌入 SVG 放大鏡圖示，並留出左側空間 */
     div[data-testid="stTextInputRootElement"] input[placeholder*="探索深海魚種"] {
         padding-left: 38px !important; 
         color: #ffffff !important;
@@ -185,16 +179,7 @@ def init_db():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     
-    # 🟢 核心修改：補上漏掉的按讚紀錄資料表建立指令，徹底根治 OperationalError
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS likes_registry (
-            user_id TEXT,
-            fish_id INTEGER,
-            PRIMARY KEY (user_id, fish_id)
-        )
-    """)
-    
-    # 加上這行：每次初始化時若欄位不對，就直接砍掉重建
+    # 建立主魚類資料表
     c.execute("""CREATE TABLE IF NOT EXISTS fish (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT,
@@ -203,23 +188,21 @@ def init_db():
                     desc TEXT,
                     img TEXT,
                     likes INTEGER DEFAULT 0,
-                    upload_time TEXT
+                    upload_time TEXT,
+                    uploader_id TEXT,
+                    habitat TEXT DEFAULT '未標記'
                 )""")
-    # ... 後續的 executemany
-    
-    # 檢查資料庫是否為空，若是，則自動匯入初始經典魚種
+                
+    # 建立按讚紀錄資料表
     c.execute("""
-        CREATE TABLE IF NOT EXISTS fish (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT,
-            en TEXT,
-            depth TEXT,
-            desc TEXT,
-            img TEXT
+        CREATE TABLE IF NOT EXISTS likes_registry (
+            user_id TEXT,
+            fish_id INTEGER,
+            PRIMARY KEY (user_id, fish_id)
         )
     """)
     
-    # 防呆：如果以前建立的表漏了 likes 欄位，自動幫舊資料庫補上
+    # 自動向後相容升級：若先前建過資料表，在此追加可能遺漏的欄位
     try:
         c.execute("ALTER TABLE fish ADD COLUMN uploader_id TEXT")
     except sqlite3.OperationalError:
@@ -235,15 +218,21 @@ def init_db():
     except sqlite3.OperationalError:
         pass
         
-    # 播種資料（系統內建的魚，上傳者標註為 "system"）
+    # 🟢 核心升級：自動替現有的舊資料表無痛追加 habitat 欄位
+    try:
+        c.execute("ALTER TABLE fish ADD COLUMN habitat TEXT DEFAULT '未標記'")
+    except sqlite3.OperationalError:
+        pass
+        
+    # 播種資料（系統內建的魚，上傳者標註為 "system"，加入預設棲息地區）
     c.execute("SELECT COUNT(*) FROM fish")
     if c.fetchone()[0] == 0:
         default_data = [
-            ("鮟鱇魚", "Lophiiformes", "1000m - 4000m", "深海中的偽裝大師，頭頂有發光的小燈籠用來引誘食物。", "https://picsum.photos/id/1015/400/300", 0, datetime.now().strftime("%Y-%m-%d %H:%M"), "system"),
-            ("大王具足蟲", "Bathynomus giganteus", "200m - 1000m", "深海的溫和清道夫，體型巨大的等足類生物。", "https://picsum.photos/id/1020/400/300", 0, datetime.now().strftime("%Y-%m-%d %H:%M"), "system")
+            ("鮟鱇魚", "Lophiiformes", "1000m - 4000m", "深海中的偽裝大師，頭頂有發光的小燈籠用來引誘食物。", "https://picsum.photos/id/1015/400/300", 0, datetime.now().strftime("%Y-%m-%d %H:%M"), "system", "太平洋 (Pacific Ocean)"),
+            ("大王具足蟲", "Bathynomus giganteus", "200m - 1000m", "深海的溫和清道夫，體型巨大的等足類生物。", "https://picsum.photos/id/1020/400/300", 0, datetime.now().strftime("%Y-%m-%d %H:%M"), "system", "印度洋 (Indian Ocean)")
         ]
-        c.executemany("""INSERT INTO fish (name, en, depth, desc, img, likes, upload_time, uploader_id) 
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?)""", default_data)
+        c.executemany("""INSERT INTO fish (name, en, depth, desc, img, likes, upload_time, uploader_id, habitat) 
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", default_data)
         
     conn.commit()
     conn.close()
@@ -254,21 +243,17 @@ if not os.path.exists("uploads"):
     os.makedirs("uploads")
 
 def parse_depth_range(depth_str):
-    """將資料庫的深度文字（如 '200m - 1000m' 或 '4000m+'）轉換成 (min, max) 數值"""
-    # 提取字串中所有的數字
+    """將資料庫的深度文字（如 '200m - 1000m'）轉換成 (min, max) 數值"""
     numbers = [int(n) for n in re.findall(r'\d+', str(depth_str))]
     if not numbers:
-        return 0, 10000  # 若無數字，預設全範圍
+        return 0, 10000  
     if len(numbers) == 1:
-        # 例如 "4000m+" -> (4000, 10000)
         return numbers[0], 10000
-    # 例如 "200m - 1000m" -> (200, 1000)
     return min(numbers), max(numbers)
 
-# 3. 安全的郵件寄送功能（改自 Streamlit Secrets）
+# 安全的郵件寄送功能
 def send_email(user_name, user_email, subject, message):
     try:
-        # 從安全設定檔讀取憑證，避免洩漏於 GitHub
         sender_email = st.secrets["gmail"]["sender_email"]
         sender_password = st.secrets["gmail"]["sender_password"]
         receiver_email = st.secrets["gmail"]["receiver_email"]
@@ -291,11 +276,12 @@ def send_email(user_name, user_email, subject, message):
         st.error(f"郵件系統錯誤：{str(e)}（請檢查 Secrets 設定是否正確）")
         return False
 
-# 4. 資料庫核心操作
+# 🟢 核心升級：精準指名欄位查詢，防止與 DB Migration 結構衝突而 Unpacking 失敗
 def load_fish():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
-    c.execute("SELECT * FROM fish ORDER BY id DESC")
+    c.execute("""SELECT id, name, en, depth, desc, img, likes, upload_time, uploader_id, habitat 
+                 FROM fish ORDER BY id DESC""")
     fish = c.fetchall()
     conn.close()
     return fish
@@ -303,18 +289,18 @@ def load_fish():
 def get_fish_by_id(fish_id):
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
-    c.execute("SELECT * FROM fish WHERE id = ?", (fish_id,))
+    c.execute("""SELECT id, name, en, depth, desc, img, likes, upload_time, uploader_id, habitat 
+                 FROM fish WHERE id = ?""", (fish_id,))
     fish = c.fetchone()
     conn.close()
     return fish
 
-# 🟢 修改：將 uploader_id 儲存進資料庫
-def add_fish(name, en, depth, desc, img, uploader_id):
+def add_fish(name, en, depth, desc, img, uploader_id, habitat):
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
-    c.execute("""INSERT INTO fish (name, en, depth, desc, img, likes, upload_time, uploader_id) 
-                 VALUES (?, ?, ?, ?, ?, 0, ?, ?)""",
-              (name, en, depth, desc, img, datetime.now().strftime("%Y-%m-%d %H:%M"), uploader_id))
+    c.execute("""INSERT INTO fish (name, en, depth, desc, img, likes, upload_time, uploader_id, habitat) 
+                 VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)""",
+              (name, en, depth, desc, img, datetime.now().strftime("%Y-%m-%d %H:%M"), uploader_id, habitat))
     conn.commit()
     conn.close()
 
@@ -326,17 +312,14 @@ def has_user_liked(user_id, fish_id):
     conn.close()
     return result is not None
 
-# 🟢 核心修改：改寫為「切換式按讚邏輯（Toggle Like）」
 def toggle_like_fish(fish_id, user_id):
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     if has_user_liked(user_id, fish_id):
-        # 如果已經按過讚 -> 收回讚（刪除紀錄、讚數 -1）
         c.execute("DELETE FROM likes_registry WHERE user_id = ? AND fish_id = ?", (user_id, fish_id))
         c.execute("UPDATE fish SET likes = MAX(0, likes - 1) WHERE id = ?", (fish_id,))
         status = "removed"
     else:
-        # 如果還沒按過讚 -> 加上讚（新增紀錄、讚數 +1）
         c.execute("INSERT INTO likes_registry (user_id, fish_id) VALUES (?, ?)", (user_id, fish_id))
         c.execute("UPDATE fish SET likes = likes + 1 WHERE id = ?", (fish_id,))
         status = "added"
@@ -344,13 +327,12 @@ def toggle_like_fish(fish_id, user_id):
     conn.close()
     return status
 
-# 🟢 新增：修改資料的資料庫更新函數
-def update_fish(fish_id, name, en, depth, desc):
+def update_fish(fish_id, name, en, depth, desc, habitat):
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     c.execute("""UPDATE fish 
-                 SET name = ?, en = ?, depth = ?, desc = ? 
-                 WHERE id = ?""", (name, en, depth, desc, fish_id))
+                 SET name = ?, en = ?, depth = ?, desc = ?, habitat = ? 
+                 WHERE id = ?""", (name, en, depth, desc, habitat, fish_id))
     conn.commit()
     conn.close()
 
@@ -358,10 +340,7 @@ def get_db_connection():
     return sqlite3.connect(DB_NAME)
 
 def get_top_5_liked_fish():
-    """查詢點讚數前 5 名的魚類"""
     conn = get_db_connection()
-    # 這裡假設你的 likes_registry 資料表紀錄了點讚
-    # 若你的 fish 資料表直接有 likes 欄位，可改為: "SELECT name, likes FROM fish ORDER BY likes DESC LIMIT 5"
     query = """
         SELECT f.name as "魚類名稱", COUNT(l.fish_id) as "人氣指數"
         FROM fish f
@@ -373,17 +352,13 @@ def get_top_5_liked_fish():
     df = pd.read_sql_query(query, conn)
     conn.close()
     
-    # 防呆：如果大家都還沒有讚，給予預設值避免圖表空白
     if df.empty or df["人氣指數"].sum() == 0:
         df = pd.DataFrame({"魚類名稱": ["尚無數據"], "人氣指數": [0]})
     return df
 
 def get_depth_statistics():
-    """計算平均深度、最深深度及總物種數"""
     conn = get_db_connection()
     cursor = conn.cursor()
-    
-    # 修正：改為讀取現有的 name 與 depth 欄位，避免查詢不存在的 depth_min/max 欄位導致閃退
     cursor.execute("SELECT name, depth FROM fish")
     rows = cursor.fetchall()
     conn.close()
@@ -396,20 +371,16 @@ def get_depth_statistics():
     deepest_fish_name = "未知"
     total_avg_depth = 0
     
-    # 利用您現有的 parse_depth_range 函數在 Python 中動態解析深度
     for name, depth_str in rows:
         d_min, d_max = parse_depth_range(depth_str)
-        # 計算單一魚種的中間值深度
         avg_single = (d_min + d_max) / 2.0
         total_avg_depth += avg_single
         
-        # 尋找最深的魚
         if d_max > max_depth:
             max_depth = d_max
             deepest_fish_name = name
             
     avg_depth = total_avg_depth / total_species if total_species > 0 else 0
-    
     stats = (total_species, avg_depth, max_depth)
     deepest_fish = (deepest_fish_name, max_depth)
     return stats, deepest_fish
@@ -419,7 +390,6 @@ def render_dashboard():
     st.markdown("即時同步潛水艇收集之聲納數據與隊員喜好回饋。")
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # 📥 讀取數據
     try:
         stats, deepest_fish = get_depth_statistics()
         total_species, avg_depth, max_depth = stats
@@ -428,9 +398,7 @@ def render_dashboard():
         st.error(f"📡 數據載入失敗，請確認資料庫設定：{e}")
         return
 
-    # -------------------------------------------------------------------------
     # 1. 磨砂玻璃科技感指標卡 (Metrics)
-    # -------------------------------------------------------------------------
     col1, col2, col3 = st.columns(3)
     
     metric_style = """
@@ -462,7 +430,6 @@ def render_dashboard():
         ), unsafe_allow_html=True)
         
     with col3:
-        # 深海之王顯示
         st.markdown(metric_style.format(
             title="👑 真正的深海之王", 
             value=f"{deepest_fish_name}", 
@@ -471,24 +438,20 @@ def render_dashboard():
 
     st.markdown("<br><br>", unsafe_allow_html=True)
 
-    # -------------------------------------------------------------------------
     # 2. Plotly 霓虹視覺長條圖 (Top 5 Liked Fish)
-    # -------------------------------------------------------------------------
     st.markdown("### 🏆 隊員最喜愛深海生物排行")
     
     df_likes = get_top_5_liked_fish()
     
-    # 建立一個水平長條圖，更方便閱讀長魚名
     fig = px.bar(
         df_likes, 
         x="人氣指數", 
         y="魚類名稱", 
         orientation='h',
         color="人氣指數",
-        color_continuous_scale=["#0a192f", "#0088cc", "#00e5ff", "#64ffda"], # 深海漸層發光色
+        color_continuous_scale=["#0a192f", "#0088cc", "#00e5ff", "#64ffda"], 
     )
     
-    # 客製化 Plotly 樣式，完美與你的深海暗色主題融為一體
     fig.update_layout(
         plot_bgcolor="rgba(0,0,0,0)",
         paper_bgcolor="rgba(0,0,0,0)",
@@ -500,18 +463,17 @@ def render_dashboard():
         xaxis=dict(
             showgrid=True,
             gridcolor="rgba(255, 255, 255, 0.05)",
-            tickformat="d", # 強制顯示為整數
+            tickformat="d", 
             title=""
         ),
         yaxis=dict(
-            autorange="reversed", # 讓第一名高居榜首
+            autorange="reversed", 
             showgrid=False,
             title=""
         ),
-        coloraxis_showscale=False # 隱藏側邊漸層色彩條，保持極簡
+        coloraxis_showscale=False 
     )
     
-    # 讓條形圖邊框帶有微光外框
     fig.update_traces(
         marker_line_color='#00e5ff',
         marker_line_width=1.5,
@@ -521,9 +483,6 @@ def render_dashboard():
     
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
-    # -------------------------------------------------------------------------
-    # 3. 探索小常識 / Insight 磨砂玻璃卡片
-    # -------------------------------------------------------------------------
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown(f"""
     <div style="
@@ -542,7 +501,6 @@ def render_dashboard():
     """, unsafe_allow_html=True)
 
 # ==================== 側邊導航 ====================
-# 🟢 修改點：使用 key="nav_page" 穩定元件狀態，徹底解決動態 index 重建造成的選單閃爍與點擊不靈敏問題
 menu_options = ["🏠 首頁", "🐟 魚類圖鑑", "📸 相關資料上傳", "📧 聯絡我們", "ℹ️ 關於我們"]
 page = st.sidebar.selectbox("🌊 選擇頁面", menu_options, key="nav_page")
 st.sidebar.markdown("---")
@@ -551,13 +509,8 @@ st.sidebar.info("🐋 一起守護深海生態！")
 # ==================== 頁面邏輯 ====================
 all_fish_data = load_fish()
 
-# 🟢 新增：潛水艇聲納環境音模組
 st.sidebar.markdown("### 📡 深海環境音")
 
-# 使用公用版權的深海微光/環境 Hum 音訊網址（後續可自行更換連結）
-# 🎯 換成你專屬的 GitHub Raw 永久直連網址，防盜連直接解鎖！
-# 🟢 1. 定義你的深海音效庫（可以無限追加！）
-# 請把上傳到 GitHub 的 mp3 直連網址填在後面
 audio_tracks = {
     "📡 潛艇主聲納 (Sonar)": "https://raw.githubusercontent.com/kevin45760/deep-sea-fish-streamlit/main/sonar.mp3",
     "🫧 深海微光氣泡 (Bubbles)": "https://raw.githubusercontent.com/kevin45760/deep-sea-fish-streamlit/main/Bubble.mp3",
@@ -565,19 +518,14 @@ audio_tracks = {
     "🌀 萬米深海暗流 (Abyss Hum)": "https://raw.githubusercontent.com/kevin45760/deep-sea-fish-streamlit/main/abyss.mp3"
 }
 
-# 🟢 2. 用 Python 動態生成 HTML 的下拉選單選項
 options_html = ""
 for name, url in audio_tracks.items():
     options_html += f'<option value="{url}">{name}</option>'
 
-# 預設播放第一個音效
 default_url = list(audio_tracks.values())[0]
 
-# 🟢 3. 科技感多音效控制台 HTML & JS
 audio_control_html = f"""
 <div style="font-family: system-ui, -apple-system, sans-serif; padding: 5px;">
-    
-    <!-- 🪐 霓虹微光下拉選單 -->
     <select id="audio-select" onchange="changeTrack()" style="
         width: 100%;
         background: #0d1826;
@@ -598,7 +546,6 @@ audio_control_html = f"""
 
     <audio id="ambient-audio" loop src="{default_url}"></audio> 
     
-    <!-- 🪐 播放 / 暫停控制按鈕 -->
     <button onclick="toggleAudio()" id="sonar-btn" style="
         width: 100%;
         background: linear-gradient(135deg, #00e5ff 0%, #00aaff 100%); 
@@ -620,13 +567,10 @@ audio_control_html = f"""
     var btn = document.getElementById('sonar-btn');
     var select = document.getElementById('audio-select');
 
-    // 🎵 切換音軌邏輯
     function changeTrack() {{
         var isPlaying = !audio.paused;
         audio.src = select.value;
         audio.load();
-        
-        // 如果原本就在播放中，切換後直接自動播放新音效，體驗超流暢
         if (isPlaying) {{
             audio.play().catch(function(error) {{
                 console.log("播放被瀏覽器阻擋: ", error);
@@ -634,7 +578,6 @@ audio_control_html = f"""
         }}
     }}
 
-    // ⏸️ 播放與暫停控制
     function toggleAudio() {{
         if (audio.paused) {{
             audio.play().then(function() {{
@@ -656,7 +599,6 @@ audio_control_html = f"""
 </script>
 """
 
-# 在側邊欄渲染，高度微調到 110px 剛好容納下拉選單與按鈕
 with st.sidebar:
     st.components.v1.html(audio_control_html, height=110)
 
@@ -666,7 +608,8 @@ if "success_fish_id" in st.session_state:
     target_fish = get_fish_by_id(st.session_state.success_fish_id)
     
     if target_fish:
-        f_id, f_name, f_en, f_depth, f_desc, f_img, f_likes, f_time, f_uploader_id = target_fish
+        # 🟢 核心變更：這裡 Unpack 10 個欄位，安全對接新欄位
+        f_id, f_name, f_en, f_depth, f_desc, f_img, f_likes, f_time, f_uploader_id, f_habitat = target_fish
         st.success(f"✨ 恭喜！您發現的「{f_name}」已成功記錄在航海日誌中。以下為即時通報數據：")
         
         with st.container(border=True):
@@ -677,7 +620,7 @@ if "success_fish_id" in st.session_state:
                 st.markdown(f"""
                     <div class="fish-title">🐟 {f_name}</div>
                     <div class="fish-en">{f_en if f_en else '無學名紀錄'}</div>
-                    <div class="fish-meta">📍 發現深度：{f_depth}</div>
+                    <div class="fish-meta">📍 發現深度：{f_depth} | 🗺️ 棲息地區：{f_habitat}</div>
                     <p class="fish-desc">{f_desc}</p>
                     <div style="color: #6688aa; font-size: 13px; margin-top: 10px;">🕒 登錄時間：{f_time}</div>
                 """, unsafe_allow_html=True)
@@ -685,7 +628,7 @@ if "success_fish_id" in st.session_state:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("✨ 進入深海圖鑑觀看全部物種", use_container_width=True):
             del st.session_state.success_fish_id
-            st.session_state.page_goto = "🐟 魚類圖鑑"  # 🟢 修正：使用 page_goto 安全轉跳，杜絕 Rerun 焦點干擾
+            st.session_state.page_goto = "🐟 魚類圖鑑"  
             st.rerun()
     else:
         del st.session_state.success_fish_id
@@ -697,7 +640,6 @@ if page == "🏠 首頁":
     st.markdown("<p style='color: #64ffda; font-size: 14px; margin-top: -15px;'>By Kevin Chen</p>", unsafe_allow_html=True)
     st.subheader("探索黑暗深淵的神秘生物")
     
-    # 🌍 10大全球深海區域 - 頂級磨砂玻璃點擊式輪播組件
     carousel_html = """
     <!DOCTYPE html>
     <html>
@@ -705,8 +647,6 @@ if page == "🏠 首頁":
         <meta charset="utf-8">
         <style>
             body { margin: 0; padding: 0; background: transparent; font-family: system-ui, -apple-system, sans-serif; overflow: hidden; }
-            
-            /* 輪播主外框 */
             .slider-container {
                 position: relative;
                 width: 100%;
@@ -716,8 +656,6 @@ if page == "🏠 首頁":
                 box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
                 border: 1px solid rgba(255, 255, 255, 0.08);
             }
-            
-            /* 幻燈片主體 */
             .slide {
                 display: none;
                 position: relative;
@@ -731,8 +669,6 @@ if page == "🏠 首頁":
                 object-fit: cover;
             }
             .slide-active { display: block; }
-            
-            /* 🎯 圖片左/右側大面積隱形/微光點擊區域 */
             .nav-zone {
                 position: absolute;
                 top: 0;
@@ -759,8 +695,6 @@ if page == "🏠 首頁":
                 background: linear-gradient(to left, rgba(5, 11, 20, 0.45), transparent); 
                 padding-left: 20px;
             }
-            
-            /* 滑鼠懸停兩側時，浮現亮青色霓虹發光箭頭 */
             .nav-zone:hover {
                 color: #00e5ff;
                 text-shadow: 0 0 12px rgba(0, 229, 255, 0.8);
@@ -768,8 +702,6 @@ if page == "🏠 首頁":
             }
             .nav-left:hover { background: linear-gradient(to right, rgba(0, 229, 255, 0.12), transparent); }
             .nav-right:hover { background: linear-gradient(to left, rgba(0, 229, 255, 0.12), transparent); }
-            
-            /* 🔮 下方深海磨砂玻璃文字面板 */
             .caption-panel {
                 position: absolute;
                 bottom: 0;
@@ -796,8 +728,6 @@ if page == "🏠 首頁":
                 line-height: 1.5;
                 max-width: 80%;
             }
-            
-            /* 分頁進度點 */
             .dots-container {
                 position: absolute;
                 bottom: 22px;
@@ -816,11 +746,10 @@ if page == "🏠 首頁":
             }
             .dot-active { 
                 background-color: #00e5ff; 
-                width: 16px; /* 當前頁面拉長，增加現代高級感 */
+                width: 16px; 
                 border-radius: 3px;
                 box-shadow: 0 0 8px #00e5ff; 
             }
-            
             @keyframes fade {
                 from { opacity: 0.6; transform: scale(1.01); }
                 to { opacity: 1; transform: scale(1); }
@@ -828,14 +757,10 @@ if page == "🏠 首頁":
         </style>
     </head>
     <body>
-
         <div class="slider-container">
-            <!-- 點擊左側區域 -->
             <div class="nav-zone nav-left" onclick="moveSlide(-1)">&#10094;</div>
-            <!-- 點擊右側區域 -->
             <div class="nav-zone nav-right" onclick="moveSlide(1)">&#10095;</div>
 
-            <!-- 10個世界經典深海區域幻燈片 -->
             <div class="slide slide-active">
                 <img src="https://images.unsplash.com/photo-1551244072-5d12893278ab?q=80&w=1200" alt="馬里亞納海溝">
                 <div class="caption-panel">
@@ -916,7 +841,6 @@ if page == "🏠 首頁":
                 </div>
             </div>
 
-            <!-- 進度點指標 -->
             <div class="dots-container">
                 <div class="dot dot-active" onclick="jumpToSlide(0)"></div>
                 <div class="dot" onclick="jumpToSlide(1)"></div>
@@ -935,7 +859,7 @@ if page == "🏠 首頁":
             let currentIndex = 0;
             const slides = document.querySelectorAll('.slide');
             const dots = document.querySelectorAll('.dot');
-            let autoTimer = setInterval(() => { moveSlide(1); }, 7000); // 預設每 7 秒自動切換
+            let autoTimer = setInterval(() => { moveSlide(1); }, 7000);
 
             function updateCarousel() {
                 slides.forEach((slide, i) => {
@@ -950,7 +874,7 @@ if page == "🏠 首頁":
             }
 
             function moveSlide(step) {
-                clearInterval(autoTimer); // 使用者手動點擊時，重設自動輪播倒數
+                clearInterval(autoTimer);
                 currentIndex += step;
                 if (currentIndex >= slides.length) currentIndex = 0;
                 if (currentIndex < 0) currentIndex = slides.length - 1;
@@ -969,10 +893,8 @@ if page == "🏠 首頁":
     </html>
     """
     
-    # 透過 Streamlit 的 Html 組件完美渲染，不觸發整個後端 rerun
     st.components.v1.html(carousel_html, height=390)
     
-    # 保持下方的 Metric 數據欄位不變
     col1, col2, col3 = st.columns(3)
     with col1: st.metric("已收錄魚種", len(all_fish_data))
     with col2: st.metric("最深紀錄", "4,000 米")
@@ -980,61 +902,20 @@ if page == "🏠 首頁":
 
 elif page == "🐟 魚類圖鑑":
     
-    # ==========================================
-    # 1. 定義海洋分層資料與精美配色
-    # ==========================================
     OCEAN_ZONES = [
-        {
-            "name": "☀️ 表層帶 (Epipelagic)",
-            "min": 0,
-            "max": 200,
-            "color": "#FFD700",  # 金黃色
-            "desc": "光線充足，是海洋生物最繁盛、光合作用活躍的區域。"
-        },
-        {
-            "name": "🌅 中層帶 / 半深海帶 (Mesopelagic)",
-            "min": 200,
-            "max": 1000,
-            "color": "#5FD5FC",  # 天藍色
-            "desc": "微弱光線的弱光帶，許多深海生物白天在此隱匿，晚上浮上表層覓食。"
-        },
-        {
-            "name": "🌌 深層帶 / 深海帶 (Bathypelagic)",
-            "min": 1000,
-            "max": 4000,
-            "color": "#4169E1",  # 皇家藍
-            "desc": "進入完全黑暗的無光帶，這裡的生物多具有發光器官，承受巨大水壓。"
-        },
-        {
-            "name": "🌋 深淵帶 (Abyssopelagic)",
-            "min": 4000,
-            "max": 6000,
-            "color": "#00e5ff",  # 🟢 修正：亮青色 (原為 #2121E4，在暗底色中過暗無法看清)
-            "desc": "接近冰點的漆黑世界，水壓極高，棲息著奇特、演化特殊的深海怪物。"
-        },
-        {
-            "name": "🕳️ 超深淵帶 / 海溝帶 (Hadalpelagic)",
-            "min": 6000,
-            "max": 11000,
-            "color": "#ff4081",  # 🟢 修正：霓虹粉紅 (原為 #2B2B72，在暗底色中過暗無法看清)
-            "desc": "地球上最深邃的海溝，生命跡象極為稀少，但仍有極限生物頑強生存。"
-        }
+        {"name": "☀️ 表層帶 (Epipelagic)", "min": 0, "max": 200, "color": "#FFD700", "desc": "光線充足，是海洋生物最繁盛、光合作用活躍的區域。"},
+        {"name": "🌅 中層帶 / 半深海帶 (Mesopelagic)", "min": 200, "max": 1000, "color": "#5FD5FC", "desc": "微弱光線的弱光帶，許多深海生物白天在此隱匿，晚上浮上表層覓食。"},
+        {"name": "🌌 深層帶 / 深海帶 (Bathypelagic)", "min": 1000, "max": 4000, "color": "#4169E1", "desc": "進入完全黑暗的無光帶，這裡的生物多具有發光器官，承受巨大水壓。"},
+        {"name": "🌋 深淵帶 (Abyssopelagic)", "min": 4000, "max": 6000, "color": "#00e5ff", "desc": "接近冰點的漆黑世界，水壓極高，棲息著奇特、演化特殊的深海怪物。"},
+        {"name": "🕳️ 超深淵帶 / 海溝帶 (Hadalpelagic)", "min": 6000, "max": 11000, "color": "#ff4081", "desc": "地球上最深邃的海溝，生命跡象極為稀少，但仍有極限生物頑強生存。"}
     ]
 
-    # ==========================================
-    # 2. 初始化滑桿數值（利用 Session State 實現快速定位）
-    # ==========================================
     if "depth_range" not in st.session_state:
-        # 預設顯示半深海帶到深海帶的範圍
         st.session_state.depth_range = (200, 4000)
 
-    # ==========================================
-    # 3. 快速定位按鈕（一鍵直達對應區間）
-    # ==========================================
     st.markdown("### 📍 快速定位海洋分層")
     col1, col2, col3, col4, col5 = st.columns(5)
 
-    # 點擊按鈕後，會直接修改 session_state 中的滑桿數值並重整網頁
     if col1.button("☀️ 表層", use_container_width=True):
         st.session_state.depth_range = (0, 200)
         st.rerun()
@@ -1051,37 +932,27 @@ elif page == "🐟 魚類圖鑑":
         st.session_state.depth_range = (6000, 11000)
         st.rerun()
 
-    # ==========================================
-    # 4. 渲染深度範圍滑桿
-    # ==========================================
     depth_range = st.slider(
         "🔍 拖曳滑桿選擇自訂深度範圍 (公尺)",
         min_value=0,
         max_value=11000,
-        key="depth_range",  # 綁定狀態
+        key="depth_range",  
         step=100
     )
 
-    # 取得使用者目前拉動的最小值與最大值
     sel_min, sel_max = depth_range
 
-    # ==========================================
-    # 5. 動態計算並顯示當前滑到的「生態區間」
-    # ==========================================
     active_zones = []
     for zone in OCEAN_ZONES:
-        # 判斷使用者的選取範圍，是否與該生態帶有交集 (Overlap)
         if not (sel_max < zone["min"] or sel_min > zone["max"]):
             active_zones.append(zone)
 
     st.markdown("### 🏷️ 您目前正在探索的生態帶：")
 
-    # 依據重疊的區間數量，動態調整排版欄位
     if active_zones:
         cols = st.columns(len(active_zones))
         for idx, zone in enumerate(active_zones):
             with cols[idx]:
-                # 使用 HTML 配合您喜歡的霓虹/磨砂玻璃感打造漂亮卡片
                 st.markdown(
                     f"""
                     <div style="
@@ -1106,27 +977,24 @@ elif page == "🐟 魚類圖鑑":
     st.markdown("---")
     st.title("🐟 深海魚類圖鑑")
     
-    # 🟢 1. 建立雙頁籤：一個放你原本的探索圖鑑，一個放我們的數據分析儀表板
     tab_encyclopedia, tab_dashboard = st.tabs(["🗺️ 探索圖鑑", "📊 深海數據觀測站"])
     
-    # -------------------------------------------------------------------------
-    # 頁籤一：原本的魚類圖鑑（維持原本的所有功能與 UI 邏輯）
-    # -------------------------------------------------------------------------
     with tab_encyclopedia:
-        # 🟢 若檢查到上傳成功旗標，就在圖鑑最上方顯示成功字樣框做檢視
         if st.session_state.get("upload_success_alert"):
             st.success("🎉 新物種登錄成功！已同步加入下方深海圖鑑供您檢視!")
-            del st.session_state.upload_success_alert  # 顯示一次後清除旗標，防止重整時重複跳出
+            del st.session_state.upload_success_alert  
         
         search = st.text_input("搜尋魚種", placeholder="輸入中文或英文名稱探索深海魚種...", label_visibility="collapsed").lower()
         
+        # 預先定義好通用的棲息地選項
+        habitat_preset_options = ["太平洋 (Pacific Ocean)", "大西洋 (Atlantic Ocean)", "印度洋 (Indian Ocean)", "北冰洋 (Arctic Ocean)", "南冰洋 (Southern Ocean)", "其他 (自訂地區)"]
+
         for f in all_fish_data:
-            f_id, f_name, f_en, f_depth, f_desc, f_img, f_likes, f_time, f_uploader_id = f
+            # 🟢 核心變更：將 f_habitat 從資料庫中解包出來 (共 10 個欄位)
+            f_id, f_name, f_en, f_depth, f_desc, f_img, f_likes, f_time, f_uploader_id, f_habitat = f
             
-            # 解析該魚類的深度區間
             fish_min, fish_max = parse_depth_range(f_depth)
             
-            # 判斷式：名字/英文符合，且「魚類深度區間」與「使用者拉桿區間」有重疊
             name_match = search in f_name.lower() or search in f_en.lower()
             depth_match = (fish_min <= sel_max) and (fish_max >= sel_min)
             
@@ -1134,17 +1002,16 @@ elif page == "🐟 魚類圖鑑":
                 with st.container(border=True):
                     col1, col2 = st.columns([1, 2])
                     with col1:
-                        # 🟢 配合 2026 新版規範將 use_container_width 改為 width="stretch"
                         st.image(f_img, width="stretch")
                     with col2:
                         st.markdown(f"""
                             <div class="fish-title">🐟 {f_name}</div>
                             <div class="fish-en">{f_en}</div>
-                            <div class="fish-meta">📍 棲息深度：{f_depth}</div>
+                            <!-- 🟢 核心變更：在此處印出棲息地區 -->
+                            <div class="fish-meta">📍 棲息深度：{f_depth} | 🗺️ 棲息地區：{f_habitat}</div>
                             <p class="fish-desc">{f_desc}</p>
                         """, unsafe_allow_html=True)
                         
-                        # 🟢 修改：將原本的雙欄改為三欄，完美塞入語音導覽
                         col_a, col_b, col_c = st.columns(3)
                         with col_a:
                             user_already_liked = has_user_liked(st.session_state.user_id, f_id)
@@ -1161,8 +1028,6 @@ elif page == "🐟 魚類圖鑑":
                                 st.code(f"https://share.streamlit.io/your-username/repo-name/~/fish_id={f_id}", language=None)
                                 
                         with col_c:
-                            # 🪐 運用 Web Speech API 打造零延遲的瀏覽器原生語音導覽
-                            # 使用 repr(f_desc) 自動幫 JavaScript 處理字串引號與換行防呆，穩如泰山
                             tts_html = f"""
                             <button onclick="speakDescription()" style="
                                 width: 100%;
@@ -1180,24 +1045,19 @@ elif page == "🐟 魚類圖鑑":
                             " onmouseover="this.style.background='linear-gradient(135deg, #00e5ff 0%, #00aaff 100%)'; this.style.color='#050b14';" onmouseout="this.style.background='linear-gradient(135deg, #192d47 0%, #0d1826 100%)'; this.style.color='#8be9fd';">
                                 🔊 聽取導覽
                             </button>
-                            
                             <script>
                                 function speakDescription() {{
-                                    // 點擊時先強制切斷目前正在朗讀的聲音，避免多隻魚的聲音疊在一起
                                     window.speechSynthesis.cancel();
-                                    
                                     var msg = new SpeechSynthesisUtterance({repr(f_desc)});
-                                    msg.lang = 'zh-TW'; // 指定台灣中文發音
-                                    msg.rate = 1.0;     // 正常語速
-                                    msg.pitch = 0.8;    // 稍微調低音調，讓聲音聽起來更具備深海探索的磁性沉穩感
-                                    
+                                    msg.lang = 'zh-TW'; 
+                                    msg.rate = 1.0;     
+                                    msg.pitch = 0.8;    
                                     window.speechSynthesis.speak(msg);
                                 }}
                             </script>
                             """
                             st.components.v1.html(tts_html, height=45)
 
-                        # 🟢 當 user_id 成功鎖定在網址後，重整網頁這裡依然能通過驗證！
                         if f_uploader_id == st.session_state.user_id:
                             st.markdown("---")
                             show_edit = st.toggle("✏️ 編輯我的發現", key=f"toggle_{f_id}")
@@ -1208,48 +1068,78 @@ elif page == "🐟 魚類圖鑑":
                                     edit_name = st.text_input("魚類中文名稱", value=f_name)
                                     edit_en = st.text_input("英文學名", value=f_en)
                                     edit_depth = st.text_input("發現深度", value=f_depth)
+                                    
+                                    # 🟢 編輯介面也支援「下拉選單 ＋ 自訂」的棲息地更新機制
+                                    default_idx = 0
+                                    if f_habitat in habitat_preset_options:
+                                        default_idx = habitat_preset_options.index(f_habitat)
+                                    else:
+                                        default_idx = len(habitat_preset_options) - 1 # 預設指到「其他」
+                                        
+                                    edit_habitat_sel = st.selectbox("棲息地區", habitat_preset_options, index=default_idx, key=f"edit_hab_sel_{f_id}")
+                                    
+                                    if edit_habitat_sel == "其他 (自訂地區)":
+                                        edit_habitat = st.text_input("請輸入自訂棲息地區", value=f_habitat, key=f"edit_hab_custom_{f_id}")
+                                    else:
+                                        edit_habitat = edit_habitat_sel
+                                        
                                     edit_desc = st.text_area("外觀與習性描述", value=f_desc)
                                     
                                     submit_edit = st.form_submit_button("💾 儲存修改")
                                     if submit_edit:
-                                        if edit_name and edit_depth and edit_desc:
-                                            update_fish(f_id, edit_name, edit_en, edit_depth, edit_desc)
+                                        if edit_name and edit_depth and edit_desc and edit_habitat:
+                                            # 🟢 呼叫更新，將 edit_habitat 送進資料庫
+                                            update_fish(f_id, edit_name, edit_en, edit_depth, edit_desc, edit_habitat)
                                             st.success("✅ 資料更新成功！")
                                             st.rerun()
                                         else:
                                             st.error("❌ 必填欄位不可留白！")
 
-    # -------------------------------------------------------------------------
-    # 頁籤二：全新的深海數據觀測站（呼叫我們寫好的 Plotly 與指標卡功能）
-    # -------------------------------------------------------------------------
     with tab_dashboard:
         render_dashboard()
 
 elif page == "📸 相關資料上傳":
     st.title("📸 上傳你的深海魚發現")
+    
     with st.form("upload_form", clear_on_submit=True):
         name = st.text_input("魚類中文名稱 *")
         en = st.text_input("英文學名 (選填)")
         depth = st.text_input("發現深度 (例如: 800米) *")
+        
+        # 🟢 核心變更：實作「下拉選單 ＋ 自訂輸入」雙向防呆，維護資料整潔
+        habitat_options = [
+            "太平洋 (Pacific Ocean)", 
+            "大西洋 (Atlantic Ocean)", 
+            "印度洋 (Indian Ocean)", 
+            "北冰洋 (Arctic Ocean)", 
+            "南冰洋 (Southern Ocean)", 
+            "其他 (自訂地區)"
+        ]
+        selected_habitat = st.selectbox("棲息地區 *", habitat_options)
+        
+        # 利用 Streamlit 的 Form 內部變數接收自訂文字
+        custom_habitat = st.text_input("請輸入自訂棲息地區 (例如：馬里亞納海溝、黑海、加拉巴哥熱泉) *", value="")
+        
         desc = st.text_area("外觀與習性描述 *")
         uploaded_file = st.file_uploader("選擇照片", type=["jpg", "png", "jpeg"])
         submitted = st.form_submit_button("🚀 發布至圖鑑")
         
-    # 🟢 將上傳成功的邏輯拉到表單外面，這樣提示框會自然渲染在頁面的「中下位置」
     if submitted:
-        if uploaded_file and name and depth and desc:
+        # 計算最終的 habitat 值
+        final_habitat = custom_habitat if selected_habitat == "其他 (自訂地區)" else selected_habitat
+        
+        if uploaded_file and name and depth and desc and final_habitat:
             file_path = os.path.join("uploads", uploaded_file.name)
             with open(file_path, "wb") as f:
                 f.write(uploaded_file.getbuffer())
             
-            add_fish(name, en, depth, desc, file_path, st.session_state.user_id)
+            # 🟢 將 final_habitat 傳遞給資料庫儲存
+            add_fish(name, en, depth, desc, file_path, st.session_state.user_id, final_habitat)
             
-            # 🟢 這裡的自由變數轉跳再也不會引發錯誤了！
             st.session_state.upload_success_alert = True
-            st.session_state.page_goto = "🐟 魚類圖鑑"  # 🟢 修正：使用 page_goto 安全轉跳，避免 widget 鎖定錯誤
+            st.session_state.page_goto = "🐟 魚類圖鑑"  
             
             st.success("✅ 上傳成功！正在為您導向圖鑑頁面做檢視...")
-            
             time.sleep(1.2)
             st.rerun()
         else:
@@ -1278,11 +1168,7 @@ elif page == "📧 聯絡我們":
 elif page == "ℹ️ 關於我們":
     st.title("⚓ 關於本站與開發者")
     
-    # -------------------------------------------------------------------------
-    # 1. 網頁開發想法
-    # -------------------------------------------------------------------------
     st.markdown("## 🌊 為什麼建立「深海奇蹟」？")
-    
     st.markdown("""
     > **「人類對火星表面的了解，甚至超過了對地球深海的認識。」**
     
@@ -1290,17 +1176,12 @@ elif page == "ℹ️ 關於我們":
     
     我們試圖打造一個不僅僅是數據堆疊的圖鑑，而是一個兼具探險儀式感與視覺饗宴的「數位深海觀測站」，點燃每個人對未知深淵的強烈好奇心。
     """)
-    
     st.markdown("---")
     
-    # -------------------------------------------------------------------------
-    # 2. 開發者基本介紹 (磨砂玻璃卡片風格)
-    # -------------------------------------------------------------------------
     st.markdown("## 💻 遇見開發者")
     
     developer_html = """
     <style>
-        /* 🪐 彈出放大時的順滑縮放動畫 */
         @keyframes deepSeaZoom {
             from { transform: scale(0.7); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
@@ -1318,7 +1199,6 @@ elif page == "ℹ️ 關於我們":
         position: relative;
     ">
         
-        <!-- 🔍 點擊放大專屬遮罩層 (Lightbox Modal) -->
         <div id="avatarModal" onclick="closeAvatarModal()" style="
             display: none; 
             position: fixed; 
@@ -1334,7 +1214,6 @@ elif page == "ℹ️ 關於我們":
             justify-content: center; 
             cursor: zoom-out;
         ">
-            <!-- 放大後的正方形照片（限制 260px 以配合 Streamlit 容器高度） -->
             <img src="https://i.ibb.co/gL8gG7wP/F4-EDD8-BD-C778-4-E4-B-B752-801-DB1863375.jpg" style="
                 max-height: 260px; 
                 max-width: 260px; 
@@ -1346,7 +1225,6 @@ elif page == "ℹ️ 關於我們":
         </div>
 
         <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
-            <!-- 🎯 小大頭貼：移入微調放大、點擊觸發內建彈窗 -->
             <img src="https://i.ibb.co/gL8gG7wP/F4-EDD8-BD-C778-4-E4-B-B752-801-DB1863375.jpg" onclick="openAvatarModal()" style="
                 width: 60px; 
                 height: 60px; 
@@ -1386,7 +1264,6 @@ elif page == "ℹ️ 關於我們":
         </div>
     </div>
 
-    <!-- 💡 控制彈出放大與縮小的純前端 JavaScript -->
     <script>
         function openAvatarModal() {
             document.getElementById('avatarModal').style.display = 'flex';
@@ -1399,7 +1276,7 @@ elif page == "ℹ️ 關於我們":
     st.components.v1.html(developer_html, height=1200, scrolling=True)
 
 # ==================== 頁尾 ====================
-st.markdown("<br><br><br>", unsafe_allow_html=True) # 留出推擠空間
+st.markdown("<br><br><br>", unsafe_allow_html=True) 
 st.markdown("""
     <div style="text-align: center; padding: 20px 0; border-top: 1px solid rgba(255, 255, 255, 0.05);">
         <p>🌊 深海奇蹟 | 守護海洋 從認識開始</p>
