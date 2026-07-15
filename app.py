@@ -1147,67 +1147,90 @@ elif page == "📸 相關資料上傳":
 
     # 定義下拉選單變動時的 Callback 函式
     def on_habitat_select_change():
-        selected = st.session_state.upload_habitat_sel
-        if selected != "手動自訂輸入":
+        selected = st.upload_habitat_sel
+        if selected != "-- 手動自訂輸入 --":
+            # 選了具體地區，自動帶入自訂地區框並鎖定
             st.session_state.upload_habitat_val = selected
         else:
+            # 切換回自訂時，清空讓使用者自己打
             st.session_state.upload_habitat_val = ""
 
     with st.container(border=True):
-        # 1. 頂部紅字提醒（模仿 Google 表單）
+        # 頂部紅字提醒
         st.markdown("<span style='color: #d93025; font-size: 0.9rem;'>*必填</span>", unsafe_allow_html=True)
-        st.write("") # 留一點小空隙
+        st.write("") 
 
-        # 2. 魚類中文名稱 (必填)
+        # 魚類中文名稱 (必填)
         st.markdown("魚類中文名稱 :red[*]")
         name = st.text_input("魚類中文名稱", label_visibility="collapsed")
         
-        # 3. 英文學名 (選填，無星號)
+        # 英文學名 (選填)
         st.markdown("英文學名 (選填)")
         en = st.text_input("英文學名", label_visibility="collapsed")
         
-        # 4. 發現深度 (必填)
+        # 發現深度 (必填)
         st.markdown("發現深度 (例如: 800米) :red[*]")
         depth = st.text_input("發現深度", label_visibility="collapsed")
         
-        # 5. 下拉選單 (選擇現有地區，非必填，維持原樣)
+        # ------------------- 調整區塊開始 -------------------
+        
+        # 1. 選擇現有地區 -> 🚀 改名為「🔮 選擇地區」並改為【必填 (加紅色星號)】
+        st.markdown("🔮 選擇地區 :red[*]")
         selected_habitat = st.selectbox(
-            "🔮 選擇現有地區", 
-            ["手動自訂輸入"] + db_habitats,
+            "選擇地區", 
+            ["-- 手動自訂輸入 --"] + db_habitats,
             key="upload_habitat_sel",
-            on_change=on_habitat_select_change
+            on_change=on_habitat_select_change,
+            label_visibility="collapsed"
         )
         
-        # 6. 棲息地區 (必填)
-        st.markdown("✍️ 棲息地區 :red[*]")
-        is_disabled = (st.session_state.upload_habitat_sel != "手動自訂輸入")
+        # 2. 棲息地區 -> 🚀 改名為「✍️ 自訂地區」並改為【選填 (無紅色星號)】
+        st.markdown("✍️ 自訂地區 (選填)")
+        is_disabled = (st.session_state.upload_habitat_sel != "-- 手動自訂輸入 --")
+        
         final_habitat = st.text_input(
-            "棲息地區", 
+            "自訂地區", 
             key="upload_habitat_val",
-            placeholder="可在這直接打字輸入全新地區...",
+            placeholder="若上方選取『手動自訂輸入』，請在此處打字輸入全新地區...",
             disabled=is_disabled,
             label_visibility="collapsed",
-            help="若要手動打字，請將上方的『選擇現有地區』切換為『手動自訂輸入』"
+            help="若要手動打字，請先將上方的『選擇地區』切換為『-- 手動自訂輸入 --』"
         )
+        
+        # ------------------- 調整區塊結束 -------------------
             
-        # 7. 外觀與習性描述 (必填)
+        # 外觀與習性描述 (必填)
         st.markdown("外觀與習性描述 :red[*]")
         desc = st.text_area("外觀與習性描述", label_visibility="collapsed")
         
-        # 8. 選擇照片 (必填，這裡假設照片為必填)
+        # 選擇照片 (必填)
         st.markdown("選擇照片 :red[*]")
         uploaded_file = st.file_uploader("選擇照片", type=["jpg", "png", "jpeg"], label_visibility="collapsed")
         
-        st.write("") # 留空隙
+        st.write("") 
         submitted = st.button("🚀 發布至圖鑑", use_container_width=True)
         
     if submitted:
-        if uploaded_file and name and depth and desc and final_habitat.strip():
+        # 🔴 核心防呆驗證邏輯：
+        # 只有當選取「手動自訂輸入」時，final_habitat 內部才絕對不能是空的！
+        habitat_is_valid = True
+        chosen_habitat = ""
+        
+        if selected_habitat == "-- 手動自訂輸入 --":
+            chosen_habitat = final_habitat.strip()
+            if not chosen_habitat:
+                habitat_is_valid = False
+        else:
+            chosen_habitat = selected_habitat
+
+        # 判斷所有必填項
+        if uploaded_file and name and depth and desc and habitat_is_valid:
             file_path = os.path.join("uploads", uploaded_file.name)
             with open(file_path, "wb") as f:
                 f.write(uploaded_file.getbuffer())
             
-            add_fish(name, en, depth, desc, file_path, st.session_state.user_id, final_habitat.strip())
+            # 將整理好的地區存入資料庫
+            add_fish(name, en, depth, desc, file_path, st.session_state.user_id, chosen_habitat)
             
             st.session_state.upload_success_alert = True
             st.session_state.page_goto = "🐟 魚類圖鑑"  
@@ -1216,7 +1239,11 @@ elif page == "📸 相關資料上傳":
             time.sleep(1.2)
             st.rerun()
         else:
-            st.error("❌ 請確認所有必填欄位（帶 * 號）皆已填寫，並已上傳照片！")
+            # 依據沒通過的條件給出對應的錯誤提示
+            if not habitat_is_valid:
+                st.error("❌ 您選擇了『手動自訂輸入』，請務必在『自訂地區』輸入框內填寫新地區名稱！")
+            else:
+                st.error("❌ 請確認所有必填欄位（帶 * 號）皆已填寫，並已上傳照片！")
         
 
 elif page == "📧 聯絡我們":
