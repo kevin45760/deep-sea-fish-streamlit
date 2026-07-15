@@ -380,6 +380,55 @@ elif min_selected >= 4000:
 else:
     st.sidebar.write("🛸 **跨區域探索中...**")
 
+# 🟢 新增：潛水艇聲納環境音模組
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 📡 艦艇聲納環境音")
+
+# 使用公用版權的深海微光/環境 Hum 音訊網址（後續可自行更換連結）
+ambient_audio_url = "https://actions.google.com/sounds/v1/ambiences/deep_ship_hum.ogg"
+
+audio_control_html = f"""
+<div style="display: flex; align-items: center; justify-content: center; padding: 5px;">
+    <audio id="sonar-audio" loop src="{ambient_audio_url}"></audio> 
+    <button onclick="toggleAudio()" id="sonar-btn" style="
+        width: 100%;
+        background: linear-gradient(135deg, #00e5ff 0%, #00aaff 100%); 
+        color: #050b14; 
+        border: none; 
+        padding: 8px 16px; 
+        border-radius: 12px; 
+        font-weight: bold; 
+        cursor: pointer; 
+        box-shadow: 0 0 15px rgba(0, 229, 255, 0.3); 
+        transition: all 0.3s ease;
+    ">
+        ▶️ 開啟深海聲納
+    </button>
+</div>
+
+<script>
+    function toggleAudio() {{
+        var audio = document.getElementById('sonar-audio');
+        var btn = document.getElementById('sonar-btn');
+        if (audio.paused) {{
+            audio.play();
+            btn.innerHTML = '⏸️ 暫停聲納音效';
+            btn.style.background = 'linear-gradient(135deg, #ff4b4b 0%, #ff2b2b 100%)';
+            btn.style.color = '#ffffff';
+            btn.style.boxShadow = '0 0 15px rgba(255, 75, 75, 0.4)';
+        } else {{
+            audio.pause();
+            btn.innerHTML = '▶️ 開啟深海聲納';
+            btn.style.background = 'linear-gradient(135deg, #00e5ff 0%, #00aaff 100%)';
+            btn.style.color = '#050b14';
+            btn.style.boxShadow = '0 0 15px rgba(0, 229, 255, 0.3)';
+        }}
+    }}
+</script>
+"""
+with st.sidebar:
+    st.components.v1.html(audio_control_html, height=60)
+
 # --- 【核心路由攔截】：成功頁面檢視 ---
 if "success_fish_id" in st.session_state:
     st.title("🎉 新物種登錄成功！")
@@ -731,23 +780,58 @@ elif page == "🐟 魚類圖鑑":
                         <p class="fish-desc">{f_desc}</p>
                     """, unsafe_allow_html=True)
                     
-                    col_a, col_b = st.columns(2)
+                    # 🟢 修改：將原本的雙欄改為三欄，完美塞入語音導覽
+                    col_a, col_b, col_c = st.columns(3)
                     with col_a:
-                        # 🟢 核心修改：動態偵測按讚狀態，渲染不同的按鈕外觀與觸發行為
                         user_already_liked = has_user_liked(st.session_state.user_id, f_id)
                         btn_label = f"❤️ 已喜歡 ({f_likes})" if user_already_liked else f"🤍 喜歡 ({f_likes})"
-                        
                         if st.button(btn_label, key=f"like_{f_id}"):
                             res = toggle_like_fish(f_id, st.session_state.user_id)
-                            if res == "added":
-                                st.toast("已加入你的喜歡清單！")
-                            else:
-                                st.toast("已收回讚。")
+                            if res == "added": st.toast("已加入你的喜歡清單！")
+                            else: st.toast("已收回讚。")
                             time.sleep(0.3)
                             st.rerun()  
+                            
                     with col_b:
-                        if st.button("🔗 分享專屬連結", key=f"share_{f_id}"):
+                        if st.button("🔗 分享連結", key=f"share_{f_id}"):
                             st.code(f"https://share.streamlit.io/your-username/repo-name/~/fish_id={f_id}", language=None)
+                            
+                    with col_c:
+                        # 🪐 運用 Web Speech API 打造零延遲的瀏覽器原生語音導覽
+                        # 使用 repr(f_desc) 自動幫 JavaScript 處理字串引號與換行防呆，穩如泰山
+                        tts_html = f"""
+                        <button onclick="speakDescription()" style="
+                            width: 100%;
+                            height: 35px;
+                            background: linear-gradient(135deg, #192d47 0%, #0d1826 100%);
+                            color: #8be9fd;
+                            border-radius: 12px;
+                            border: 1px solid rgba(139, 233, 253, 0.25);
+                            border-top: 1px solid rgba(139, 233, 253, 0.5);
+                            font-size: 14px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+                            transition: all 0.2s ease;
+                        " onmouseover="this.style.background='linear-gradient(135deg, #00e5ff 0%, #00aaff 100%)'; this.style.color='#050b14';" onmouseout="this.style.background='linear-gradient(135deg, #192d47 0%, #0d1826 100%)'; this.style.color='#8be9fd';">
+                            🔊 聽取導覽
+                        </button>
+                        
+                        <script>
+                            function speakDescription() {{
+                                // 點擊時先強制切斷目前正在朗讀的聲音，避免多隻魚的聲音疊在一起
+                                window.speechSynthesis.cancel();
+                                
+                                var msg = new SpeechSynthesisUtterance({repr(f_desc)});
+                                msg.lang = 'zh-TW'; // 指定台灣中文發音
+                                msg.rate = 1.0;     // 正常語速
+                                msg.pitch = 0.8;    // 稍微調低音調，讓聲音聽起來更具備深海探索的磁性沉穩感
+                                
+                                window.speechSynthesis.speak(msg);
+                            }}
+                        </script>
+                        """
+                        st.components.v1.html(tts_html, height=45)
 
                     # 🟢 當 user_id 成功鎖定在網址後，重整網頁這裡依然能通過驗證！
                     if f_uploader_id == st.session_state.user_id:
