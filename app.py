@@ -382,7 +382,7 @@ else:
 
 # 🟢 新增：潛水艇聲納環境音模組
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 📡 艦艇聲納環境音")
+st.sidebar.markdown("### 📡 深海環境音")
 
 # 使用公用版權的深海微光/環境 Hum 音訊網址（後續可自行更換連結）
 # 🎯 換成你專屬的 GitHub Raw 永久直連網址，防盜連直接解鎖！
