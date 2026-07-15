@@ -29,6 +29,11 @@ else:
 if "nav_page" not in st.session_state:
     st.session_state.nav_page = "🏠 首頁"
 
+# 🟢 修正點：安全跳轉機制，避免直接修改 widget 綁定的 nav_page 導致 Streamlit 報錯或選單閃爍
+if "page_goto" in st.session_state:
+    st.session_state.nav_page = st.session_state.page_goto
+    del st.session_state.page_goto
+
 # 注入自訂 CSS，打造深海科技感視覺
 st.markdown("""
 <style>
@@ -537,11 +542,9 @@ def render_dashboard():
     """, unsafe_allow_html=True)
 
 # ==================== 側邊導航 ====================
-# 🟢 修改點：移除 key="nav_page"，改由變數與 index 控管，完美避開 Widget Key 鎖定限制
+# 🟢 修改點：使用 key="nav_page" 穩定元件狀態，徹底解決動態 index 重建造成的選單閃爍與點擊不靈敏問題
 menu_options = ["🏠 首頁", "🐟 魚類圖鑑", "📸 相關資料上傳", "📧 聯絡我們", "ℹ️ 關於我們"]
-default_idx = menu_options.index(st.session_state.nav_page) if st.session_state.nav_page in menu_options else 0
-page = st.sidebar.selectbox("🌊 選擇頁面", menu_options, index=default_idx)
-st.session_state.nav_page = page  # 同步點選狀態
+page = st.sidebar.selectbox("🌊 選擇頁面", menu_options, key="nav_page")
 st.sidebar.markdown("---")
 st.sidebar.info("🐋 一起守護深海生態！")
 
@@ -682,7 +685,7 @@ if "success_fish_id" in st.session_state:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("✨ 進入深海圖鑑觀看全部物種", use_container_width=True):
             del st.session_state.success_fish_id
-            st.session_state.nav_page = "🐟 魚類圖鑑"
+            st.session_state.page_goto = "🐟 魚類圖鑑"  # 🟢 修正：使用 page_goto 安全轉跳，杜絕 Rerun 焦點干擾
             st.rerun()
     else:
         del st.session_state.success_fish_id
@@ -877,7 +880,7 @@ if page == "🏠 首頁":
                 <img src="https://images.unsplash.com/photo-1505118380757-91f5f5632de0?q=80&w=1200" alt="爪哇海溝">
                 <div class="caption-panel">
                     <div class="caption-title">6. 爪哇海溝 (Java Trench) · 印度洋</div>
-                    <div class="caption-desc">印度洋唯一突破七千米深度的海溝（最深 7,725 米），綿延於蘇門答臘與爪哇島南側，是引發南亞海嘯的源頭。</div>
+                    <div class="caption-desc">印度洋唯一突破官方七千米深度的海溝（最深 7,725 米），綿延於蘇門答臘與爪哇島南側，是引發南亞海嘯的源頭。</div>
                 </div>
             </div>
 
@@ -1006,14 +1009,14 @@ elif page == "🐟 魚類圖鑑":
             "name": "🌋 深淵帶 (Abyssopelagic)",
             "min": 4000,
             "max": 6000,
-            "color": "#2121E4",  # 午夜藍
+            "color": "#00e5ff",  # 🟢 修正：亮青色 (原為 #2121E4，在暗底色中過暗無法看清)
             "desc": "接近冰點的漆黑世界，水壓極高，棲息著奇特、演化特殊的深海怪物。"
         },
         {
             "name": "🕳️ 超深淵帶 / 海溝帶 (Hadalpelagic)",
             "min": 6000,
             "max": 11000,
-            "color": "#2B2B72",  # 極致暗紫黑
+            "color": "#ff4081",  # 🟢 修正：霓虹粉紅 (原為 #2B2B72，在暗底色中過暗無法看清)
             "desc": "地球上最深邃的海溝，生命跡象極為稀少，但仍有極限生物頑強生存。"
         }
     ]
@@ -1243,7 +1246,7 @@ elif page == "📸 相關資料上傳":
             
             # 🟢 這裡的自由變數轉跳再也不會引發錯誤了！
             st.session_state.upload_success_alert = True
-            st.session_state.nav_page = "🐟 魚類圖鑑"
+            st.session_state.page_goto = "🐟 魚類圖鑑"  # 🟢 修正：使用 page_goto 安全轉跳，避免 widget 鎖定錯誤
             
             st.success("✅ 上傳成功！正在為您導向圖鑑頁面做檢視...")
             
