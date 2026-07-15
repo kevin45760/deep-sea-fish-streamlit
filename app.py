@@ -343,8 +343,7 @@ def update_fish(fish_id, name, en, depth, desc):
     conn.close()
 
 def get_db_connection():
-    # 請換成你實際的 SQLite 資料庫檔名
-    return sqlite3.connect("your_database.db")
+    return sqlite3.connect(DB_NAME)
 
 def get_top_5_liked_fish():
     """查詢點讚數前 5 名的魚類"""
@@ -372,21 +371,35 @@ def get_depth_statistics():
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # 這裡計算平均深度 = (最低棲息深度 + 最高棲息深度) / 2
-    cursor.execute("""
-        SELECT 
-            COUNT(id) as total_species,
-            AVG((depth_min + depth_max) / 2.0) as avg_depth,
-            MAX(depth_max) as max_depth
-        FROM fish
-    """)
-    stats = cursor.fetchone()
-    
-    # 找出真正的深海之王（棲息深度最深的魚）
-    cursor.execute("SELECT name, depth_max FROM fish ORDER BY depth_max DESC LIMIT 1")
-    deepest_fish = cursor.fetchone()
-    
+    # 修正：改為讀取現有的 name 與 depth 欄位，避免查詢不存在的 depth_min/max 欄位導致閃退
+    cursor.execute("SELECT name, depth FROM fish")
+    rows = cursor.fetchall()
     conn.close()
+    
+    total_species = len(rows)
+    if total_species == 0:
+        return (0, 0, 0), ("無數據", 0)
+        
+    max_depth = 0
+    deepest_fish_name = "未知"
+    total_avg_depth = 0
+    
+    # 利用您現有的 parse_depth_range 函數在 Python 中動態解析深度
+    for name, depth_str in rows:
+        d_min, d_max = parse_depth_range(depth_str)
+        # 計算單一魚種的中間值深度
+        avg_single = (d_min + d_max) / 2.0
+        total_avg_depth += avg_single
+        
+        # 尋找最深的魚
+        if d_max > max_depth:
+            max_depth = d_max
+            deepest_fish_name = name
+            
+    avg_depth = total_avg_depth / total_species if total_species > 0 else 0
+    
+    stats = (total_species, avg_depth, max_depth)
+    deepest_fish = (deepest_fish_name, max_depth)
     return stats, deepest_fish
 
 def render_dashboard():
