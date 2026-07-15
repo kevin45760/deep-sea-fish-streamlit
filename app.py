@@ -1120,7 +1120,7 @@ elif page == "🐟 魚類圖鑑":
             
             # 判斷式：名字/英文符合，且「魚類深度區間」與「使用者拉桿區間」有重疊
             name_match = search in f_name.lower() or search in f_en.lower()
-            depth_match = (fish_min <= max_selected) and (fish_max >= min_selected)
+            depth_match = (fish_min <= sel_max) and (fish_max >= sel_min)
             
             if name_match and depth_match:
                 with st.container(border=True):
