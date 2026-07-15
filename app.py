@@ -1111,7 +1111,8 @@ elif page == "🐟 魚類圖鑑":
                                 )
                                 
                                 # 當選了固定地區時，防呆鎖定輸入框
-                                is_edit_disabled = (st.session_state[f"edit_hab_sel_{f_id}"] != "-- 手動自訂輸入 --")
+                                # 當選了固定地區時，防呆鎖定輸入框
+                                is_edit_disabled = (edit_habitat_sel != "-- 手動自訂輸入 --") # 🟢 改用這個，編輯切換也順暢無阻！
                                     
                                 edit_habitat = st.text_input(
                                     "自訂地區 (支援直接自訂輸入)", 
@@ -1186,8 +1187,9 @@ elif page == "📸 相關資料上傳":
         )
         
         # 2. 棲息地區 -> 🚀 改名為「✍️ 自訂地區」並改為【選填 (無紅色星號)】
+        # 2. 棲息地區 -> 🚀 改名為「✍️ 自訂地區」並改為【選填 (無紅色星號)】
         st.markdown("✍️ 自訂地區 (選填)")
-        is_disabled = (st.session_state.upload_habitat_sel != "-- 手動自訂輸入 --")
+        is_disabled = (selected_habitat != "-- 手動自訂輸入 --") # 🟢 改用這個，切換時反應最即時！
         
         final_habitat = st.text_input(
             "自訂地區", 
