@@ -218,7 +218,7 @@ def init_db():
     except sqlite3.OperationalError:
         pass
         
-    # 🟢 核心升級：自動替現有的舊資料表無痛追加 habitat 欄位
+    # 自動替現有的舊資料表無痛追加 habitat 欄位
     try:
         c.execute("ALTER TABLE fish ADD COLUMN habitat TEXT DEFAULT '未標記'")
     except sqlite3.OperationalError:
@@ -276,7 +276,32 @@ def send_email(user_name, user_email, subject, message):
         st.error(f"郵件系統錯誤：{str(e)}（請檢查 Secrets 設定是否正確）")
         return False
 
-# 🟢 核心升級：精準指名欄位查詢，防止與 DB Migration 結構衝突而 Unpacking 失敗
+# 🟢 核心升級一：動態載入資料庫內所有「不重複」的棲息地區，並與預設選項合併
+def load_habitats():
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    # 撈出資料庫裡所有非預設/非空值的獨特棲息地
+    c.execute("SELECT DISTINCT habitat FROM fish WHERE habitat IS NOT NULL AND habitat != '未標記' AND habitat != ''")
+    db_habitats = [row[0] for row in c.fetchall()]
+    conn.close()
+    
+    # 基本五大洋預設選項
+    presets = [
+        "太平洋 (Pacific Ocean)", 
+        "大西洋 (Atlantic Ocean)", 
+        "印度洋 (Indian Ocean)", 
+        "北冰洋 (Arctic Ocean)", 
+        "南冰洋 (Southern Ocean)"
+    ]
+    
+    # 將資料庫現有值與預設值合併，並去除重複項，保持乾淨
+    all_habs = []
+    for h in (presets + db_habitats):
+        if h not in all_habs:
+            all_habs.append(h)
+    return all_habs
+
+# 精準指名欄位查詢，防止與 DB Migration 結構衝突而 Unpacking 失敗
 def load_fish():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
@@ -608,7 +633,6 @@ if "success_fish_id" in st.session_state:
     target_fish = get_fish_by_id(st.session_state.success_fish_id)
     
     if target_fish:
-        # 🟢 核心變更：這裡 Unpack 10 個欄位，安全對接新欄位
         f_id, f_name, f_en, f_depth, f_desc, f_img, f_likes, f_time, f_uploader_id, f_habitat = target_fish
         st.success(f"✨ 恭喜！您發現的「{f_name}」已成功記錄在航海日誌中。以下為即時通報數據：")
         
@@ -986,11 +1010,10 @@ elif page == "🐟 魚類圖鑑":
         
         search = st.text_input("搜尋魚種", placeholder="輸入中文或英文名稱探索深海魚種...", label_visibility="collapsed").lower()
         
-        # 預先定義好通用的棲息地選項
-        habitat_preset_options = ["太平洋 (Pacific Ocean)", "大西洋 (Atlantic Ocean)", "印度洋 (Indian Ocean)", "北冰洋 (Arctic Ocean)", "南冰洋 (Southern Ocean)", "其他 (自訂地區)"]
+        # 🟢 核心變更二：讀取資料庫現存所有棲息地選項（包含使用者過去自填新增的）
+        db_habitats = load_habitats()
 
         for f in all_fish_data:
-            # 🟢 核心變更：將 f_habitat 從資料庫中解包出來 (共 10 個欄位)
             f_id, f_name, f_en, f_depth, f_desc, f_img, f_likes, f_time, f_uploader_id, f_habitat = f
             
             fish_min, fish_max = parse_depth_range(f_depth)
@@ -1007,7 +1030,6 @@ elif page == "🐟 魚類圖鑑":
                         st.markdown(f"""
                             <div class="fish-title">🐟 {f_name}</div>
                             <div class="fish-en">{f_en}</div>
-                            <!-- 🟢 核心變更：在此處印出棲息地區 -->
                             <div class="fish-meta">📍 棲息深度：{f_depth} | 🗺️ 棲息地區：{f_habitat}</div>
                             <p class="fish-desc">{f_desc}</p>
                         """, unsafe_allow_html=True)
@@ -1069,17 +1091,25 @@ elif page == "🐟 魚類圖鑑":
                                     edit_en = st.text_input("英文學名", value=f_en)
                                     edit_depth = st.text_input("發現深度", value=f_depth)
                                     
-                                    # 🟢 編輯介面也支援「下拉選單 ＋ 自訂」的棲息地更新機制
-                                    default_idx = 0
-                                    if f_habitat in habitat_preset_options:
-                                        default_idx = habitat_preset_options.index(f_habitat)
+                                    # 🟢 核心變更三：編輯介面也同步使用動態回收下拉選單
+                                    # 如果這隻魚原本的 habitat 就存在，就選中它；如果不在（或遺失），就預設指向第一個
+                                    habitat_options = db_habitats + ["➕ 新增自訂地區..."]
+                                    if f_habitat in db_habitats:
+                                        default_idx = db_habitats.index(f_habitat)
                                     else:
-                                        default_idx = len(habitat_preset_options) - 1 # 預設指到「其他」
+                                        # 如果原本就是使用者自己打的值，但因某種原因被移出 db_habitats，就加入並選中它
+                                        if f_habitat != "未標記":
+                                            habitat_options = [f_habitat] + db_habitats + ["➕ 新增自訂地區..."]
+                                            default_idx = 0
+                                        else:
+                                            default_idx = 0
                                         
-                                    edit_habitat_sel = st.selectbox("棲息地區", habitat_preset_options, index=default_idx, key=f"edit_hab_sel_{f_id}")
+                                    edit_habitat_sel = st.selectbox("棲息地區", habitat_options, index=default_idx, key=f"edit_hab_sel_{f_id}")
                                     
-                                    if edit_habitat_sel == "其他 (自訂地區)":
-                                        edit_habitat = st.text_input("請輸入自訂棲息地區", value=f_habitat, key=f"edit_hab_custom_{f_id}")
+                                    # 如果選到新增自訂，才跳出輸入框讓使用者輸入新地區
+                                    if edit_habitat_sel == "➕ 新增自訂地區...":
+                                        edit_habitat_input = st.text_input("請輸入自訂棲息地區", value="", key=f"edit_hab_custom_{f_id}")
+                                        edit_habitat = edit_habitat_input.strip()
                                     else:
                                         edit_habitat = edit_habitat_sel
                                         
@@ -1088,7 +1118,6 @@ elif page == "🐟 魚類圖鑑":
                                     submit_edit = st.form_submit_button("💾 儲存修改")
                                     if submit_edit:
                                         if edit_name and edit_depth and edit_desc and edit_habitat:
-                                            # 🟢 呼叫更新，將 edit_habitat 送進資料庫
                                             update_fish(f_id, edit_name, edit_en, edit_depth, edit_desc, edit_habitat)
                                             st.success("✅ 資料更新成功！")
                                             st.rerun()
@@ -1101,39 +1130,40 @@ elif page == "🐟 魚類圖鑑":
 elif page == "📸 相關資料上傳":
     st.title("📸 上傳你的深海魚發現")
     
+    # 🟢 核心變更四：載入動態下拉選單並增加「➕ 新增自訂地區...」
+    db_habitats = load_habitats()
+    habitat_options = db_habitats + ["➕ 新增自訂地區..."]
+    
     with st.form("upload_form", clear_on_submit=True):
         name = st.text_input("魚類中文名稱 *")
         en = st.text_input("英文學名 (選填)")
         depth = st.text_input("發現深度 (例如: 800米) *")
         
-        # 🟢 核心變更：實作「下拉選單 ＋ 自訂輸入」雙向防呆，維護資料整潔
-        habitat_options = [
-            "太平洋 (Pacific Ocean)", 
-            "大西洋 (Atlantic Ocean)", 
-            "印度洋 (Indian Ocean)", 
-            "北冰洋 (Arctic Ocean)", 
-            "南冰洋 (Southern Ocean)", 
-            "其他 (自訂地區)"
-        ]
         selected_habitat = st.selectbox("棲息地區 *", habitat_options)
         
-        # 利用 Streamlit 的 Form 內部變數接收自訂文字
-        custom_habitat = st.text_input("請輸入自訂棲息地區 (例如：馬里亞納海溝、黑海、加拉巴哥熱泉) *", value="")
-        
+        # 🟢 核心變更五：只有選到「➕ 新增自訂地區...」時，才會在表單中顯示輸入框
+        # 為了不影響 Streamlit 表單佈局，自訂輸入框使用 Form 內部變數接收
+        custom_habitat_input = ""
+        if selected_habitat == "➕ 新增自訂地區...":
+            custom_habitat_input = st.text_input("請輸入自訂棲息地區 (例如：馬里亞納海溝、加拉巴哥熱泉) *", value="")
+            
         desc = st.text_area("外觀與習性描述 *")
         uploaded_file = st.file_uploader("選擇照片", type=["jpg", "png", "jpeg"])
         submitted = st.form_submit_button("🚀 發布至圖鑑")
         
     if submitted:
-        # 計算最終的 habitat 值
-        final_habitat = custom_habitat if selected_habitat == "其他 (自訂地區)" else selected_habitat
-        
+        # 計算最終寫入資料庫的 habitat 值
+        if selected_habitat == "➕ 新增自訂地區...":
+            final_habitat = custom_habitat_input.strip()
+        else:
+            final_habitat = selected_habitat
+            
         if uploaded_file and name and depth and desc and final_habitat:
             file_path = os.path.join("uploads", uploaded_file.name)
             with open(file_path, "wb") as f:
                 f.write(uploaded_file.getbuffer())
             
-            # 🟢 將 final_habitat 傳遞給資料庫儲存
+            # 將 final_habitat 傳遞給資料庫儲存。下一次加載網頁，這個新地區就會直接列在下拉選單裡了！
             add_fish(name, en, depth, desc, file_path, st.session_state.user_id, final_habitat)
             
             st.session_state.upload_success_alert = True
