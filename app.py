@@ -385,7 +385,8 @@ st.sidebar.markdown("---")
 st.sidebar.markdown("### 📡 艦艇聲納環境音")
 
 # 使用公用版權的深海微光/環境 Hum 音訊網址（後續可自行更換連結）
-ambient_audio_url = "https://www.w3schools.com/html/horse.mp3"
+# 🎯 換成你專屬的 GitHub Raw 永久直連網址，防盜連直接解鎖！
+ambient_audio_url = "https://raw.githubusercontent.com/kevin45760/deep-sea-fish-streamlit/main/sonar.mp3"
 
 audio_control_html = f"""
 <div style="display: flex; align-items: center; justify-content: center; padding: 5px;">
