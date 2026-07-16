@@ -12,7 +12,7 @@ import time  # 🟢 用來控制提示框顯示的停留時間
 import pandas as pd
 import plotly.express as px
 
-# ==================== 使用者登入系統 ====================
+# ==================== 登入系統 ====================
 DB_NAME = "fish_v3.db"
 
 def init_user_db():
@@ -42,7 +42,7 @@ def register_user(username, password, email):
         conn.commit()
         conn.close()
         return True
-    except sqlite3.IntegrityError:
+    except:
         return False
 
 def login_user(username, password):
@@ -54,48 +54,53 @@ def login_user(username, password):
     conn.close()
     return user is not None
 
-# ==================== 登入狀態管理 ====================
+# ==================== 狀態管理 ====================
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.username = None
 
-# ==================== 主要內容 - 加上登入檢查 ====================
+# ==================== 主程式 ====================
 if not st.session_state.logged_in:
-    st.title("🌊 歡迎來到深海未知的奧妙")
-    st.subheader("請先登入或註冊才能探索深海世界")
+    # ==================== 獨立登入頁面 ====================
+    st.title("🌊 深海未知的奧妙")
+    st.subheader("請先登入才能探索深海世界")
     
-    tab1, tab2 = st.tabs(["🔑 登入", "📝 註冊"])
+    tab1, tab2 = st.tabs(["🔑 登入", "📝 註冊新帳號"])
     
     with tab1:
-        username = st.text_input("帳號", key="login_username")
-        password = st.text_input("密碼", type="password", key="login_password")
-        if st.button("登入", use_container_width=True):
+        st.markdown("### 會員登入")
+        username = st.text_input("帳號名稱", key="login_user")
+        password = st.text_input("密碼", type="password", key="login_pass")
+        remember = st.checkbox("記住我", value=True)
+        
+        if st.button("登入", use_container_width=True, type="primary"):
             if login_user(username, password):
                 st.session_state.logged_in = True
                 st.session_state.username = username
-                st.success("登入成功！")
+                st.success(f"歡迎回來，{username}！")
                 st.rerun()
             else:
-                st.error("帳號或密碼錯誤")
+                st.error("帳號或密碼錯誤，請再試一次")
     
     with tab2:
+        st.markdown("### 註冊新帳號")
         new_user = st.text_input("設定帳號名稱")
         new_email = st.text_input("電子郵件")
         new_pass = st.text_input("設定密碼", type="password")
         new_pass2 = st.text_input("再次確認密碼", type="password")
         
-        if st.button("註冊帳號", use_container_width=True):
+        if st.button("註冊", use_container_width=True):
             if new_pass != new_pass2:
-                st.error("兩次密碼不一致")
+                st.error("兩次密碼輸入不一致")
             elif len(new_pass) < 6:
-                st.error("密碼至少需要 6 個字元")
+                st.error("密碼至少需 6 個字元")
             elif register_user(new_user, new_pass, new_email):
                 st.success("註冊成功！請使用新帳號登入")
             else:
                 st.error("此帳號名稱已被使用")
 
 else:
-    # ==================== 已登入後顯示原本內容 ====================
+    # ==================== 登入成功後顯示原本內容 ====================
     st.sidebar.success(f"👤 {st.session_state.username}")
     if st.sidebar.button("登出"):
         st.session_state.logged_in = False
