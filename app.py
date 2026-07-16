@@ -72,18 +72,15 @@ st.markdown("""
     }
 
     div[data-testid="stVerticalBlockBorder"] {
-        background: linear-gradient(135deg, rgba(22, 38, 64, 0.7) 0%, rgba(10, 18, 30, 0.85) 100%) !important;
-        backdrop-filter: blur(20px) !important;
-        -webkit-backdrop-filter: blur(20px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.06) !important;
-        border-top: 1px solid rgba(255, 255, 255, 0.18) !important; 
+        background: rgba(255, 255, 255, 0.03) !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
         border-radius: 20px !important;
         padding: 24px !important;
         margin-bottom: 25px !important;
-        box-shadow: 
-            0 20px 50px rgba(0, 0, 0, 0.55), 
-            inset 0 1px 1px rgba(255, 255, 255, 0.15) !important;
-        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2) !important;
+        transition: all 0.4s ease !important;
     }
 
     div[data-testid="stVerticalBlockBorder"]:hover {
