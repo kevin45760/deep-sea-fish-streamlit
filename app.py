@@ -1080,7 +1080,7 @@ elif page == "🐟 魚類圖鑑":
                                 st.write("📝 **更新魚類資訊**")
                                 edit_name = st.text_input("魚類中文名稱", value=f_name, key=f"edit_name_{f_id}")
                                 edit_en = st.text_input("英文學名", value=f_en, key=f"edit_en_{f_id}")
-                                edit_depth = st.text_input("發現深度", value=f_depth, key=f"edit_depth_{f_id}")
+                                edit_depth = st.text_input("出沒深度", value=f_depth, key=f"edit_depth_{f_id}")
                                 
                                 # 決定選單的預設選取 index
                                 if f_habitat in db_habitats:
