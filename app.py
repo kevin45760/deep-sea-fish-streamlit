@@ -10,6 +10,15 @@ import uuid
 import time  # 🟢 用來控制提示框顯示的停留時間
 import pandas as pd
 import plotly.express as px
+from streamlit_firebase_auth import st_firebase_auth
+
+# --- Firebase 初始化 ---
+# 這裡繼續使用你原有的 firebase-admin 初始化代碼 (確保服務帳戶 JSON 路徑正確)
+import firebase_admin
+from firebase_admin import credentials
+if not firebase_admin._apps:
+    cred = credentials.Certificate("serviceAccountKey.json")
+    firebase_admin.initialize_app(cred)
 
 # 1. 網頁基本設定
 st.set_page_config(page_title="深海未知的奧妙", page_icon="🌊", layout="wide")
@@ -260,6 +269,13 @@ st.markdown("""
 
 DB_NAME = "fish_v3.db"
 
+# 如果使用 SQLAlchemy
+class FishRecord(Base):
+    __tablename__ = 'fish_records'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(String)  # 儲存 Firebase 的 uid
+    name = Column(String)
+
 # 2. 資料庫初始化與資料播種 (Seeding)
 def init_db():
     conn = sqlite3.connect(DB_NAME)
@@ -408,6 +424,16 @@ def add_fish(name, en, depth, desc, img, uploader_id, habitat):
               (name, en, depth, desc, img, datetime.now().strftime("%Y-%m-%d %H:%M"), uploader_id, habitat))
     conn.commit()
     conn.close()
+
+def load_user_fish(user_id):
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    # 根據 uploader_id 過濾資料
+    c.execute("""SELECT id, name, en, depth, desc, img, likes, upload_time, uploader_id, habitat 
+                 FROM fish WHERE uploader_id = ? ORDER BY id DESC""", (user_id,))
+    fish = c.fetchall()
+    conn.close()
+    return fish
 
 def has_user_liked(user_id, fish_id):
     conn = sqlite3.connect(DB_NAME)
@@ -603,6 +629,70 @@ def render_dashboard():
     </div>
     """, unsafe_allow_html=True)
 
+# 放到檔案中後續的函式定義區塊中
+def verify_firebase_token(id_token):
+    try:
+        # 驗證 Token 的有效性
+        decoded_token = auth.verify_id_token(id_token)
+        uid = decoded_token['uid']
+        email = decoded_token.get('email')
+        
+        # 使用 Streamlit 的 session_state 取代 Flask 的 session
+        st.session_state.user_id = uid
+        st.session_state.email = email
+        return True, "登入成功"
+    except Exception as e:
+        return False, str(e)
+
+# 在側邊欄顯示登入測試區 (建議暫時加在側邊欄最上方)
+if "email" not in st.session_state:
+    st.sidebar.markdown("### 🔑 系統登入")
+    token_input = st.sidebar.text_input("輸入 Firebase ID Token", type="password")
+    if st.sidebar.button("驗證登入"):
+        success, msg = verify_firebase_token(token_input)
+        if success:
+            st.sidebar.success(msg)
+            st.rerun()
+        else:
+            st.sidebar.error("驗證失敗：" + msg)
+else:
+    st.sidebar.write(f"目前使用者: {st.session_state.email}")
+
+# --- 登入控制流程 ---
+def main():
+    # 檢查是否已登入
+    if 'user' not in st.session_state:
+        # 顯示登入頁面
+        st.title("🌊 進入深海觀測站")
+        st.subheader("請先進行身分驗證")
+        
+        # 使用套件提供的登入元件
+        user = st_firebase_auth(
+            api_key=st.secrets["firebase"]["apiKey"],
+            auth_domain=st.secrets["firebase"]["authDomain"],
+            project_id=st.secrets["firebase"]["projectId"],
+            storage_bucket=st.secrets["firebase"]["storageBucket"],
+            messaging_sender_id=st.secrets["firebase"]["messagingSenderId"],
+            app_id=st.secrets["firebase"]["appId"]
+        )
+        
+        if user:
+            st.session_state.user = user
+            st.rerun() # 驗證成功，重新整理進入主畫面
+    else:
+        # 這裡放置你原本所有的程式碼 (原有的 fish_v3.db 邏輯、網頁 UI 等)
+        # 確保在執行內容前，已經取得了 user 的資訊
+        render_app_content()
+
+def render_app_content():
+    # 將你原本寫在 main 區塊的所有程式碼放在這裡
+    st.write(f"歡迎回來，{st.session_state.user['email']}")
+    # 原有的 st.sidebar, 魚類圖鑑, 邏輯等...
+    # ...
+
+if __name__ == "__main__":
+    main()
+
 # ==================== 側邊導航 ====================
 menu_options = ["🏠 首頁", "🐟 魚類圖鑑", "📸 相關資料上傳", "📧 聯絡我們", "ℹ️ 關於我們"]
 page = st.sidebar.selectbox("🌊 選擇頁面", menu_options, key="nav_page")
@@ -610,7 +700,7 @@ st.sidebar.markdown("---")
 st.sidebar.info("🐋 一起守護深海生態！")
 
 # ==================== 頁面邏輯 ====================
-all_fish_data = load_fish()
+all_fish_data = load_user_fish(st.session_state.user_id)
 
 st.sidebar.markdown("### 📡 深海環境音")
 
