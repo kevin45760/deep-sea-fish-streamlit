@@ -3,7 +3,6 @@ import os
 import sqlite3
 from datetime import datetime
 import smtplib
-import hashlib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import re
@@ -11,101 +10,6 @@ import uuid
 import time  # 🟢 用來控制提示框顯示的停留時間
 import pandas as pd
 import plotly.express as px
-
-# ==================== 登入系統 ====================
-DB_NAME = "fish_v3.db"
-
-def init_user_db():
-    conn = sqlite3.connect(DB_NAME)
-    c = conn.cursor()
-    c.execute("""CREATE TABLE IF NOT EXISTS users (
-                    id INTEGER PRIMARY KEY,
-                    username TEXT UNIQUE,
-                    password TEXT,
-                    email TEXT,
-                    created_at TEXT
-                )""")
-    conn.commit()
-    conn.close()
-
-init_user_db()
-
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
-
-def register_user(username, password, email):
-    try:
-        conn = sqlite3.connect(DB_NAME)
-        c = conn.cursor()
-        c.execute("INSERT INTO users (username, password, email, created_at) VALUES (?, ?, ?, ?)",
-                  (username, hash_password(password), email, datetime.now().strftime("%Y-%m-%d %H:%M")))
-        conn.commit()
-        conn.close()
-        return True
-    except:
-        return False
-
-def login_user(username, password):
-    conn = sqlite3.connect(DB_NAME)
-    c = conn.cursor()
-    c.execute("SELECT username FROM users WHERE username = ? AND password = ?", 
-              (username, hash_password(password)))
-    user = c.fetchone()
-    conn.close()
-    return user is not None
-
-# ==================== 狀態管理 ====================
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-    st.session_state.username = None
-
-# ==================== 主程式 ====================
-if not st.session_state.logged_in:
-    # ==================== 獨立登入頁面 ====================
-    st.title("🌊 深海未知的奧妙")
-    st.subheader("請先登入才能探索深海世界")
-    
-    tab1, tab2 = st.tabs(["🔑 登入", "📝 註冊新帳號"])
-    
-    with tab1:
-        st.markdown("### 會員登入")
-        username = st.text_input("帳號名稱", key="login_user")
-        password = st.text_input("密碼", type="password", key="login_pass")
-        remember = st.checkbox("記住我", value=True)
-        
-        if st.button("登入", use_container_width=True, type="primary"):
-            if login_user(username, password):
-                st.session_state.logged_in = True
-                st.session_state.username = username
-                st.success(f"歡迎回來，{username}！")
-                st.rerun()
-            else:
-                st.error("帳號或密碼錯誤，請再試一次")
-    
-    with tab2:
-        st.markdown("### 註冊新帳號")
-        new_user = st.text_input("設定帳號名稱")
-        new_email = st.text_input("電子郵件")
-        new_pass = st.text_input("設定密碼", type="password")
-        new_pass2 = st.text_input("再次確認密碼", type="password")
-        
-        if st.button("註冊", use_container_width=True):
-            if new_pass != new_pass2:
-                st.error("兩次密碼輸入不一致")
-            elif len(new_pass) < 6:
-                st.error("密碼至少需 6 個字元")
-            elif register_user(new_user, new_pass, new_email):
-                st.success("註冊成功！請使用新帳號登入")
-            else:
-                st.error("此帳號名稱已被使用")
-
-else:
-    # ==================== 登入成功後顯示原本內容 ====================
-    st.sidebar.success(f"👤 {st.session_state.username}")
-    if st.sidebar.button("登出"):
-        st.session_state.logged_in = False
-        st.session_state.username = None
-        st.rerun()
 
 # 1. 網頁基本設定
 st.set_page_config(page_title="深海未知的奧妙", page_icon="🌊", layout="wide")
