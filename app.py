@@ -59,6 +59,49 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.username = None
 
+# ==================== 主要內容 - 加上登入檢查 ====================
+if not st.session_state.logged_in:
+    st.title("🌊 歡迎來到深海未知的奧妙")
+    st.subheader("請先登入或註冊才能探索深海世界")
+    
+    tab1, tab2 = st.tabs(["🔑 登入", "📝 註冊"])
+    
+    with tab1:
+        username = st.text_input("帳號", key="login_username")
+        password = st.text_input("密碼", type="password", key="login_password")
+        if st.button("登入", use_container_width=True):
+            if login_user(username, password):
+                st.session_state.logged_in = True
+                st.session_state.username = username
+                st.success("登入成功！")
+                st.rerun()
+            else:
+                st.error("帳號或密碼錯誤")
+    
+    with tab2:
+        new_user = st.text_input("設定帳號名稱")
+        new_email = st.text_input("電子郵件")
+        new_pass = st.text_input("設定密碼", type="password")
+        new_pass2 = st.text_input("再次確認密碼", type="password")
+        
+        if st.button("註冊帳號", use_container_width=True):
+            if new_pass != new_pass2:
+                st.error("兩次密碼不一致")
+            elif len(new_pass) < 6:
+                st.error("密碼至少需要 6 個字元")
+            elif register_user(new_user, new_pass, new_email):
+                st.success("註冊成功！請使用新帳號登入")
+            else:
+                st.error("此帳號名稱已被使用")
+
+else:
+    # ==================== 已登入後顯示原本內容 ====================
+    st.sidebar.success(f"👤 {st.session_state.username}")
+    if st.sidebar.button("登出"):
+        st.session_state.logged_in = False
+        st.session_state.username = None
+        st.rerun()
+
 # 1. 網頁基本設定
 st.set_page_config(page_title="深海未知的奧妙", page_icon="🌊", layout="wide")
 
@@ -307,49 +350,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 DB_NAME = "fish_v3.db"
-
-# ==================== 主要內容 - 加上登入檢查 ====================
-if not st.session_state.logged_in:
-    st.title("🌊 歡迎來到深海未知的奧妙")
-    st.subheader("請先登入或註冊才能探索深海世界")
-    
-    tab1, tab2 = st.tabs(["🔑 登入", "📝 註冊"])
-    
-    with tab1:
-        username = st.text_input("帳號", key="login_username")
-        password = st.text_input("密碼", type="password", key="login_password")
-        if st.button("登入", use_container_width=True):
-            if login_user(username, password):
-                st.session_state.logged_in = True
-                st.session_state.username = username
-                st.success("登入成功！")
-                st.rerun()
-            else:
-                st.error("帳號或密碼錯誤")
-    
-    with tab2:
-        new_user = st.text_input("設定帳號名稱")
-        new_email = st.text_input("電子郵件")
-        new_pass = st.text_input("設定密碼", type="password")
-        new_pass2 = st.text_input("再次確認密碼", type="password")
-        
-        if st.button("註冊帳號", use_container_width=True):
-            if new_pass != new_pass2:
-                st.error("兩次密碼不一致")
-            elif len(new_pass) < 6:
-                st.error("密碼至少需要 6 個字元")
-            elif register_user(new_user, new_pass, new_email):
-                st.success("註冊成功！請使用新帳號登入")
-            else:
-                st.error("此帳號名稱已被使用")
-
-else:
-    # ==================== 已登入後顯示原本內容 ====================
-    st.sidebar.success(f"👤 {st.session_state.username}")
-    if st.sidebar.button("登出"):
-        st.session_state.logged_in = False
-        st.session_state.username = None
-        st.rerun()
 
 # 2. 資料庫初始化與資料播種 (Seeding)
 def init_db():
