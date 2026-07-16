@@ -49,7 +49,7 @@ st.markdown("""
     div[data-testid="stTextInputRootElement"]:hover {
         background: rgba(255, 255, 255, 0.07) !important;
         border-color: rgba(0, 229, 255, 0.3) !important;
-        box-shadow: 0 8px 32px 0 rgba(0, 229, 255, 0.1) !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.05) !important;
     }
             
     div[data-testid="stTextInputRootElement"]:focus-within {
