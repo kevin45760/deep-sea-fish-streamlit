@@ -646,7 +646,7 @@ if "success_fish_id" in st.session_state:
         f_id, f_name, f_en, f_depth, f_desc, f_img, f_likes, f_time, f_uploader_id, f_habitat = target_fish
         st.success(f"✨ 恭喜！您發現的「{f_name}」已成功記錄在航海日誌中。以下為即時通報數據：")
         
-        with st.container(border=True):
+        with st.container(border=False):
             col1, col2 = st.columns([1, 2])
             with col1:
                 st.image(f_img, use_container_width=True)
@@ -1032,7 +1032,7 @@ elif page == "🐟 魚類圖鑑":
             depth_match = (fish_min <= sel_max) and (fish_max >= sel_min)
             
             if name_match and depth_match:
-                with st.container(border=True):
+                with st.container(border=False):
                     col1, col2 = st.columns([1, 2])
                     with col1:
                         st.image(f_img, width="stretch")
@@ -1175,7 +1175,7 @@ elif page == "📸 相關資料上傳":
             # 切換回自訂時，清空讓使用者自己打
             st.session_state.upload_habitat_val = ""
 
-    with st.container(border=True):
+    with st.container(border=False):
         # 頂部紅字提醒
         st.markdown("<span style='color: #d93025; font-size: 0.9rem;'>*必填</span>", unsafe_allow_html=True)
         st.write("") 
