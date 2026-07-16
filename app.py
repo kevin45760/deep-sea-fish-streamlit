@@ -10,7 +10,7 @@ import uuid
 import time  # 🟢 用來控制提示框顯示的停留時間
 import pandas as pd
 import plotly.express as px
-from streamlit_firebase_auth import st_firebase_auth
+from streamlit_firebase_auth import streamlit_firebase_auth as st_firebase_auth
 
 # --- Firebase 初始化 ---
 # 這裡繼續使用你原有的 firebase-admin 初始化代碼 (確保服務帳戶 JSON 路徑正確)
