@@ -3,6 +3,7 @@ import os
 import sqlite3
 from datetime import datetime
 import smtplib
+import hashlib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import re
@@ -12,28 +13,51 @@ import pandas as pd
 import plotly.express as px
 
 # ==================== 使用者登入系統 ====================
+DB_NAME = "fish_v3.db"
+
+def init_user_db():
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute("""CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY,
+                    username TEXT UNIQUE,
+                    password TEXT,
+                    email TEXT,
+                    created_at TEXT
+                )""")
+    conn.commit()
+    conn.close()
+
+init_user_db()
+
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def register_user(username, password, email):
+    try:
+        conn = sqlite3.connect(DB_NAME)
+        c = conn.cursor()
+        c.execute("INSERT INTO users (username, password, email, created_at) VALUES (?, ?, ?, ?)",
+                  (username, hash_password(password), email, datetime.now().strftime("%Y-%m-%d %H:%M")))
+        conn.commit()
+        conn.close()
+        return True
+    except sqlite3.IntegrityError:
+        return False
+
+def login_user(username, password):
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute("SELECT username FROM users WHERE username = ? AND password = ?", 
+              (username, hash_password(password)))
+    user = c.fetchone()
+    conn.close()
+    return user is not None
+
+# ==================== 登入狀態管理 ====================
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.username = None
-    st.session_state.remember_me = False
-
-def login_user(username, password):
-    # 這裡先用簡單字典，之後可改成資料庫
-    users = {
-        "admin": "123456",
-        "kevin": "123456",
-        "test": "123456"
-    }
-    if username in users and users[username] == password:
-        st.session_state.logged_in = True
-        st.session_state.username = username
-        return True
-    return False
-
-def logout_user():
-    st.session_state.logged_in = False
-    st.session_state.username = None
-    st.rerun()
 
 # 1. 網頁基本設定
 st.set_page_config(page_title="深海未知的奧妙", page_icon="🌊", layout="wide")
@@ -283,6 +307,49 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 DB_NAME = "fish_v3.db"
+
+# ==================== 主要內容 - 加上登入檢查 ====================
+if not st.session_state.logged_in:
+    st.title("🌊 歡迎來到深海未知的奧妙")
+    st.subheader("請先登入或註冊才能探索深海世界")
+    
+    tab1, tab2 = st.tabs(["🔑 登入", "📝 註冊"])
+    
+    with tab1:
+        username = st.text_input("帳號", key="login_username")
+        password = st.text_input("密碼", type="password", key="login_password")
+        if st.button("登入", use_container_width=True):
+            if login_user(username, password):
+                st.session_state.logged_in = True
+                st.session_state.username = username
+                st.success("登入成功！")
+                st.rerun()
+            else:
+                st.error("帳號或密碼錯誤")
+    
+    with tab2:
+        new_user = st.text_input("設定帳號名稱")
+        new_email = st.text_input("電子郵件")
+        new_pass = st.text_input("設定密碼", type="password")
+        new_pass2 = st.text_input("再次確認密碼", type="password")
+        
+        if st.button("註冊帳號", use_container_width=True):
+            if new_pass != new_pass2:
+                st.error("兩次密碼不一致")
+            elif len(new_pass) < 6:
+                st.error("密碼至少需要 6 個字元")
+            elif register_user(new_user, new_pass, new_email):
+                st.success("註冊成功！請使用新帳號登入")
+            else:
+                st.error("此帳號名稱已被使用")
+
+else:
+    # ==================== 已登入後顯示原本內容 ====================
+    st.sidebar.success(f"👤 {st.session_state.username}")
+    if st.sidebar.button("登出"):
+        st.session_state.logged_in = False
+        st.session_state.username = None
+        st.rerun()
 
 # 2. 資料庫初始化與資料播種 (Seeding)
 def init_db():
@@ -626,30 +693,6 @@ def render_dashboard():
         </p>
     </div>
     """, unsafe_allow_html=True)
-
-# ==================== 登入區塊 ====================
-with st.sidebar:
-    if st.session_state.logged_in:
-        st.success(f"✅ 已登入：{st.session_state.username}")
-        if st.button("登出"):
-            logout_user()
-    else:
-        st.markdown("### 🔑 會員登入")
-        username = st.text_input("帳號", key="login_user")
-        password = st.text_input("密碼", type="password", key="login_pass")
-        remember = st.checkbox("記住我", value=True)
-        
-        if st.button("登入", use_container_width=True):
-            if login_user(username, password):
-                st.session_state.remember_me = remember
-                st.success("登入成功！")
-                st.rerun()
-            else:
-                st.error("帳號或密碼錯誤")
-        
-        st.markdown("**還沒有帳號？**")
-        if st.button("註冊新帳號", use_container_width=True):
-            st.info("註冊功能開發中...（可自行擴充）")
 
 # ==================== 側邊導航 ====================
 menu_options = ["🏠 首頁", "🐟 魚類圖鑑", "📸 相關資料上傳", "📧 聯絡我們", "ℹ️ 關於我們"]
