@@ -219,7 +219,6 @@ st.markdown("""
         display: none !important;
     }   
             
-    /* 建立通用的毛玻璃類別 */
     .frosted-glass {
         background: rgba(255, 255, 255, 0.03) !important; /* 極低透明度白底 */
         backdrop-filter: blur(15px) !important;           /* 核心：強烈模糊 */
@@ -231,7 +230,6 @@ st.markdown("""
         color: white !important;
     }
             
-    /* 漂浮氣泡 */
     .bubbles {
         position: fixed;
         top: 0; left: 0; width: 100%; height: 100%;
@@ -246,6 +244,15 @@ st.markdown("""
     }
     @keyframes rise {
         to { transform: translateY(-100vh); opacity: 0; }
+    }     
+               
+    .fish-card:hover {
+        transform: translateY(-12px) scale(1.02);
+        box-shadow: 0 30px 70px rgba(0, 229, 255, 0.25) !important;
+        border-color: #00e5ff !important;
+    }
+    .fish-card:hover img {
+        transform: scale(1.08);
     }
 
 </style>
@@ -707,18 +714,23 @@ if "success_fish_id" in st.session_state:
         f_id, f_name, f_en, f_depth, f_desc, f_img, f_likes, f_time, f_uploader_id, f_habitat = target_fish
         st.success(f"✨ 恭喜！您發現的「{f_name}」已成功記錄在航海日誌中。以下為即時通報數據：")
         
-        with st.container(border=False):
-            col1, col2 = st.columns([1, 2])
-            with col1:
-                st.image(f_img, use_container_width=True)
-            with col2:
-                st.markdown(f"""
+        with st.container():
+            st.markdown(f"""
+            <div class="fish-card" style="background: rgba(13,30,54,0.75); border:1px solid rgba(0,229,255,0.2); border-radius:20px; overflow:hidden; transition:all 0.4s cubic-bezier(0.4,0,0.2,1);">
+                <div style="position:relative;">
+                    <img src="{f_img}" style="width:100%; height:260px; object-fit:cover; transition:transform 0.6s ease;">
+                    <div class="like-badge" style="position:absolute; top:16px; right:16px; background:rgba(0,0,0,0.6); padding:6px 12px; border-radius:30px; font-size:13px; backdrop-filter:blur(10px);">
+                        ❤️ {f_likes}
+                    </div>
+                </div>
+                <div style="padding:20px 24px 24px;">
                     <div class="fish-title">🐟 {f_name}</div>
-                    <div class="fish-en">{f_en if f_en else '無學名紀錄'}</div>
-                    <div class="fish-meta">📍 出沒深度：{f_depth} | 🗺️ 棲息地區：{f_habitat}</div>
-                    <p class="fish-desc">{f_desc}</p>
-                    <div style="color: #6688aa; font-size: 13px; margin-top: 10px;">🕒 登錄時間：{f_time}</div>
-                """, unsafe_allow_html=True)
+                    <div class="fish-en">{f_en}</div>
+                    <div class="fish-meta">📍 {f_depth} • {f_habitat}</div>
+                    <p class="fish-desc" style="display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden;">{f_desc}</p>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
         
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("✨ 進入深海圖鑑觀看全部物種", use_container_width=True):
