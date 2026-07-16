@@ -165,6 +165,18 @@ st.markdown("""
     [data-testid="stHeaderActionElements"] {
         display: none !important;
     }   
+            
+    /* 建立通用的毛玻璃類別 */
+    .frosted-glass {
+        background: rgba(255, 255, 255, 0.03) !important; /* 極低透明度白底 */
+        backdrop-filter: blur(15px) !important;           /* 核心：強烈模糊 */
+        -webkit-backdrop-filter: blur(15px) !important;   /* Safari 支援 */
+        border: 1px solid rgba(255, 255, 255, 0.1) !important; /* 微弱邊框增加立體感 */
+        border-radius: 15px !important;
+        padding: 20px !important;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
+        color: white !important;
+    }
 
 </style>
 """, unsafe_allow_html=True)
