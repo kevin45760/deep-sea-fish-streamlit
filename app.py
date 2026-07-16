@@ -636,7 +636,7 @@ if "success_fish_id" in st.session_state:
                 st.markdown(f"""
                     <div class="fish-title">🐟 {f_name}</div>
                     <div class="fish-en">{f_en if f_en else '無學名紀錄'}</div>
-                    <div class="fish-meta">📍 發現深度：{f_depth} | 🗺️ 棲息地區：{f_habitat}</div>
+                    <div class="fish-meta">📍 出沒深度：{f_depth} | 🗺️ 棲息地區：{f_habitat}</div>
                     <p class="fish-desc">{f_desc}</p>
                     <div style="color: #6688aa; font-size: 13px; margin-top: 10px;">🕒 登錄時間：{f_time}</div>
                 """, unsafe_allow_html=True)
@@ -1170,9 +1170,9 @@ elif page == "📸 相關資料上傳":
         st.markdown("英文學名 (選填)")
         en = st.text_input("英文學名", label_visibility="collapsed")
         
-        # 發現深度 (必填)
-        st.markdown("發現深度 (例如: 800米) :red[*]")
-        depth = st.text_input("發現深度", label_visibility="collapsed")
+        # 出沒深度 (必填)
+        st.markdown("出沒深度 (例如: 800米) :red[*]")
+        depth = st.text_input("出沒深度", label_visibility="collapsed")
         
         # ------------------- 調整區塊開始 -------------------
         
