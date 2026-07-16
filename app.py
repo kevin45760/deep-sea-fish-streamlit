@@ -72,15 +72,24 @@ st.markdown("""
     }
 
     div[data-testid="stVerticalBlockBorder"] {
-        background: rgba(255, 255, 255, 0.03) !important;
-        backdrop-filter: blur(12px) !important;
-        -webkit-backdrop-filter: blur(12px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        /* 移除強烈的實體邊框，改用極細的線條或乾脆移除 */
+        border: 1px solid rgba(255, 255, 255, 0.03) !important; 
+        
+        /* 增加背景的通透感，使用深色漸層過渡 */
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0.01) 100%) !important;
+        
+        /* 用大範圍、低透明度的陰影來製造漂浮感，取代框線 */
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important; 
+        
+        /* 圓角稍微柔化一點 */
         border-radius: 20px !important;
-        padding: 24px !important;
-        margin-bottom: 25px !important;
-        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2) !important;
-        transition: all 0.4s ease !important;
+        backdrop-filter: blur(10px) !important;
+        transition: all 0.3s ease !important;
+    }
+
+    /* 當滑鼠移上去時，才給予淡淡的發光邊框，不要一直顯示 */
+    div[data-testid="stVerticalBlockBorder"]:hover {
+        border-color: rgba(0, 229, 255, 0.15) !important;
     }
 
     div[data-testid="stVerticalBlockBorder"]:hover {
