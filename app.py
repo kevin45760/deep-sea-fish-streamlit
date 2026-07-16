@@ -11,6 +11,30 @@ import time  # 🟢 用來控制提示框顯示的停留時間
 import pandas as pd
 import plotly.express as px
 
+# ==================== 使用者登入系統 ====================
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+    st.session_state.username = None
+    st.session_state.remember_me = False
+
+def login_user(username, password):
+    # 這裡先用簡單字典，之後可改成資料庫
+    users = {
+        "admin": "123456",
+        "kevin": "123456",
+        "test": "123456"
+    }
+    if username in users and users[username] == password:
+        st.session_state.logged_in = True
+        st.session_state.username = username
+        return True
+    return False
+
+def logout_user():
+    st.session_state.logged_in = False
+    st.session_state.username = None
+    st.rerun()
+
 # 1. 網頁基本設定
 st.set_page_config(page_title="深海未知的奧妙", page_icon="🌊", layout="wide")
 
@@ -602,6 +626,30 @@ def render_dashboard():
         </p>
     </div>
     """, unsafe_allow_html=True)
+
+# ==================== 登入區塊 ====================
+with st.sidebar:
+    if st.session_state.logged_in:
+        st.success(f"✅ 已登入：{st.session_state.username}")
+        if st.button("登出"):
+            logout_user()
+    else:
+        st.markdown("### 🔑 會員登入")
+        username = st.text_input("帳號", key="login_user")
+        password = st.text_input("密碼", type="password", key="login_pass")
+        remember = st.checkbox("記住我", value=True)
+        
+        if st.button("登入", use_container_width=True):
+            if login_user(username, password):
+                st.session_state.remember_me = remember
+                st.success("登入成功！")
+                st.rerun()
+            else:
+                st.error("帳號或密碼錯誤")
+        
+        st.markdown("**還沒有帳號？**")
+        if st.button("註冊新帳號", use_container_width=True):
+            st.info("註冊功能開發中...（可自行擴充）")
 
 # ==================== 側邊導航 ====================
 menu_options = ["🏠 首頁", "🐟 魚類圖鑑", "📸 相關資料上傳", "📧 聯絡我們", "ℹ️ 關於我們"]
