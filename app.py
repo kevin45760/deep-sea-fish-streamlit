@@ -14,6 +14,25 @@ import plotly.express as px
 # 1. 網頁基本設定
 st.set_page_config(page_title="深海未知的奧妙", page_icon="🌊", layout="wide")
 
+# 漂浮氣泡
+bubble_js = """
+<div class="bubbles" id="bubbles"></div>
+<script>
+const bubblesContainer = document.getElementById('bubbles');
+for(let i = 0; i < 35; i++) {
+    const b = document.createElement('div');
+    b.className = 'bubble';
+    b.style.width = b.style.height = Math.random() * 6 + 3 + 'px';
+    b.style.left = Math.random() * 100 + '%';
+    b.style.animationDuration = Math.random() * 8 + 12 + 's';
+    b.style.animationDelay = '-' + Math.random() * 15 + 's';
+    b.style.opacity = Math.random() * 0.5 + 0.1;
+    bubblesContainer.appendChild(b);
+}
+</script>
+"""
+st.components.v1.html(bubble_js, height=0)
+
 # 🟢 初始化瀏覽器身分代碼 (結合 st.query_params 讓 F5 刷新不失憶)
 if "uid" in st.query_params:
     st.session_state.user_id = st.query_params["uid"]
@@ -69,8 +88,32 @@ st.markdown("""
     }   
             
     [data-testid="stAppViewContainer"] { 
-        background: radial-gradient(circle at 50% 40%, #0d1e36 0%, #050b14 100%) !important; 
+        background: 
+            radial-gradient(circle at 50% 30%, rgba(13, 30, 84, 0.9) 0%, #050b14 70%),
+            linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6));
+        position: relative;
+        overflow: hidden;
     }
+
+    /* 增加極淡的深海光束 */
+    [data-testid="stAppViewContainer"]::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(0, 229, 255, 0.08) 0%, transparent 70%);
+        animation: lightRay 25s linear infinite;
+        pointer-events: none;
+        z-index: -1;
+    }
+
+    @keyframes lightRay {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
 
     div[data-testid="stVerticalBlockBorder"] {
         /* 移除強烈的實體邊框，改用極細的線條或乾脆移除 */
@@ -186,6 +229,23 @@ st.markdown("""
         padding: 20px !important;
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
         color: white !important;
+    }
+            
+    /* 漂浮氣泡 */
+    .bubbles {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        pointer-events: none; z-index: -1; overflow: hidden;
+    }
+    .bubble {
+        position: absolute;
+        background: rgba(255,255,255,0.15);
+        border-radius: 50%;
+        animation: rise linear infinite;
+        box-shadow: 0 0 12px rgba(0,229,255,0.4);
+    }
+    @keyframes rise {
+        to { transform: translateY(-100vh); opacity: 0; }
     }
 
 </style>
