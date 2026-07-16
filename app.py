@@ -23,26 +23,7 @@ if not firebase_admin._apps:
 # 1. 網頁基本設定
 st.set_page_config(page_title="深海未知的奧妙", page_icon="🌊", layout="wide")
 
-# 漂浮氣泡
-bubble_js = """
-<div class="bubbles" id="bubbles"></div>
-<script>
-const bubblesContainer = document.getElementById('bubbles');
-for(let i = 0; i < 35; i++) {
-    const b = document.createElement('div');
-    b.className = 'bubble';
-    b.style.width = b.style.height = Math.random() * 6 + 3 + 'px';
-    b.style.left = Math.random() * 100 + '%';
-    b.style.animationDuration = Math.random() * 8 + 12 + 's';
-    b.style.animationDelay = '-' + Math.random() * 15 + 's';
-    b.style.opacity = Math.random() * 0.5 + 0.1;
-    bubblesContainer.appendChild(b);
-}
-</script>
-"""
-st.components.v1.html(bubble_js, height=0)
-
-# 🟢 初始化瀏覽器身分代碼 (結合 st.query_params 讓 F5 刷新不失憶)
+# --- 3. 初始化全域狀態 ---
 if "uid" in st.query_params:
     st.session_state.user_id = st.query_params["uid"]
 else:
@@ -50,7 +31,6 @@ else:
         st.session_state.user_id = str(uuid.uuid4())
     st.query_params["uid"] = st.session_state.user_id
 
-# 初始化側邊欄導航狀態
 if "nav_page" not in st.session_state:
     st.session_state.nav_page = "🏠 首頁"
 
@@ -700,7 +680,7 @@ st.sidebar.markdown("---")
 st.sidebar.info("🐋 一起守護深海生態！")
 
 # ==================== 頁面邏輯 ====================
-all_fish_data = load_user_fish(st.session_state.user_id)
+all_fish_data = load_user_fish(st.session_state.user_id) 
 
 st.sidebar.markdown("### 📡 深海環境音")
 
